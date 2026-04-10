@@ -23,7 +23,7 @@ type GoogleAuthInput struct {
 	Token string `json:"token" binding:"required"`
 }
 
-var emailRegex = regexp.MustCompile(`^(lci|lcb|lcs|lit)2024(00[1-9]|0[1-5][0-9]|060)@iiitl\.ac\.in$`)
+var emailRegex = regexp.MustCompile(`^(lci|lcb|lcs|lit)(2022|2023|2024|2025|2026)(00[1-9]|0[1-5][0-9]|060)@iiitl\.ac\.in$`)
 
 func handleGoogleCallback(c *gin.Context) {
 	var input GoogleAuthInput
