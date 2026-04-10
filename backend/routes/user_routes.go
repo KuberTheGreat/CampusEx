@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"crypto/rand"
+	crand "crypto/rand"
 	"encoding/hex"
-	"math/rand/v2"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -39,7 +39,7 @@ func createProfile(c *gin.Context) {
 	// Generate a random stock symbol if not provided
 	if input.StockSymbol == "" {
 		b := make([]byte, 3)
-		rand.Read(b)
+		crand.Read(b)
 		input.StockSymbol = strings.ToUpper(hex.EncodeToString(b))
 	}
 
@@ -67,7 +67,7 @@ func createProfile(c *gin.Context) {
 
 		// Naive random selection
 		for len(hiddenIndices) < hideCount {
-			idx := rand.IntN(len(input.Traits))
+			idx := rand.Intn(len(input.Traits))
 			hiddenIndices[idx] = true
 		}
 

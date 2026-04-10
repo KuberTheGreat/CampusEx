@@ -1,28 +1,29 @@
 package routes
 
 import (
-	"log"
+	"context"
 	"net/http"
+	"os"
+	"regexp"
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/idtoken"
 )
 
 func RegisterAuthRoutes(router *gin.RouterGroup) {
 	auth := router.Group("/auth")
 	{
-		// This simulates the OAuth callback from Google
-		// In a real scenario, this would exchange an auth code for a token with Google,
-		// and verify the hd (hosted domain) is `@iiitl.ac.in`.
 		auth.POST("/google", handleGoogleCallback)
 	}
 }
 
 type GoogleAuthInput struct {
-	Email string `json:"email" binding:"required"`
-	Token string `json:"token" binding:"required"` // mocked token for now
+	Token string `json:"token" binding:"required"`
 }
+
+var emailRegex = regexp.MustCompile(`^(lci|lcb|lcs|lit)2024(00[1-9]|0[1-5][0-9]|060)@iiitl\.ac\.in$`)
 
 func handleGoogleCallback(c *gin.Context) {
 	var input GoogleAuthInput
@@ -31,32 +32,46 @@ func handleGoogleCallback(c *gin.Context) {
 		return
 	}
 
-	// Mock domain check
-	// if !strings.HasSuffix(input.Email, "@iiitl.ac.in") {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Only college email is allowed"})
-	// 	return
-	// }
+	clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	if clientID == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Server missing Google Client ID"})
+		return
+	}
+
+	payload, err := idtoken.Validate(context.Background(), input.Token, clientID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Google token: " + err.Error()})
+		return
+	}
+
+	email, ok := payload.Claims["email"].(string)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email not found in token"})
+		return
+	}
+
+	// Validate email against the strict regex
+	if !emailRegex.MatchString(email) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Email does not match the allowed college roll format."})
+		return
+	}
 
 	// Ensure user exists or create
 	var user models.User
-	result := database.DB.Where("email = ?", input.Email).First(&user)
+	result := database.DB.Where("email = ?", email).First(&user)
 
 	if result.Error != nil {
 		// New User
 		user = models.User{
-			Email:            input.Email,
-			ValidationStatus: true,
+			Email: email,
+			Name:  payload.Claims["name"].(string), // Extract Name from Google
 		}
-		// Notice: To satisfy DB constraints before profile setup, we could set a dummy StockSymbol
-		// but since it's unique we will create a random one or leave it pending. We'd rather not save 
-		// to DB until the rest of the profile is done, or we save it without stock symbol if it's nullable.
-		// For this implementation, let's assume stock symbol might not be null, so we'll wait for profile setup.
-		// So we just return success with a "needs_profile: true" flag.
 		
 		c.JSON(http.StatusOK, gin.H{
 			"message":       "Email verified",
 			"needs_profile": true,
-			"email":         input.Email,
+			"email":         email,
+			"name":          user.Name,
 		})
 		return
 	}
