@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 type NewsItem = {
   id: number;
@@ -72,7 +73,7 @@ export default function NewsPage() {
   };
 
   const handleVote = async (newsId: number, isConfirmed: boolean) => {
-    if (!user?.id) return alert("Please log in first.");
+    if (!user?.id) return toast.error("Please log in first.");
     try {
       const res = await fetch(`http://localhost:8080/api/news/${newsId}/vote`, {
         method: "POST",
@@ -80,15 +81,15 @@ export default function NewsPage() {
         body: JSON.stringify({ userId: user.id, isConfirmed }),
       });
       if (res.ok) {
-        alert("Vote recorded!");
+        toast.success("Vote recorded!");
         fetchNews();
       } else {
         const errorData = await res.json();
-        alert("Error: " + errorData.error);
+        toast.error("Error: " + errorData.error);
       }
     } catch (error) {
       console.error(error);
-      alert("Failed to submit vote");
+      toast.error("Failed to submit vote");
     }
   };
 
