@@ -12,6 +12,35 @@ export default function ProfilePage() {
   const { user: authUser } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tradeMode, setTradeMode] = useState<"BUY" | "SELL" | null>(null);
+  const [tradeShares, setTradeShares] = useState(1);
+
+  const executeTrade = async () => {
+    if (!authUser?.id || !profile || !tradeMode) return;
+    const totalCost = tradeShares * profile.currentPrice;
+    
+    if (tradeMode === "BUY" && totalCost > (authUser.auraCoins || 0)) {
+       return alert("Insufficient AURA balance!");
+    }
+
+    try {
+      const res = await fetch("http://localhost:8080/api/market/trade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyerId: authUser.id, targetUserId: profile.id, shares: tradeShares, type: tradeMode })
+      });
+      if (res.ok) {
+        alert(`Successfully executed ${tradeMode} of ${tradeShares} shares of ${profile.stockSymbol}! Your balance will update.`);
+        const { refreshUser } = await import("@/context/AuthContext").then(() => ({ refreshUser: window.location.reload }));
+        window.location.reload(); 
+      } else {
+        const error = await res.json();
+        alert(`Trade Failed: ${error.error}`);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
 
   // Mock data for the chart since we haven't implemented real price histories yet
   const mockChartData = [
@@ -78,7 +107,7 @@ export default function ProfilePage() {
           </div>
 
           {String(authUser?.id) !== String(profile.id) && (
-            <button className="w-full bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition shadow-lg shadow-purple-600/20">
+            <button onClick={() => {setTradeMode("BUY"); setTradeShares(1);}} className="w-full bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition shadow-lg shadow-purple-600/20">
               Trade {profile.stockSymbol}
             </button>
           )}
@@ -155,6 +184,35 @@ export default function ProfilePage() {
         </div>
 
       </div>
+
+      {tradeMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setTradeMode(null)}>
+          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-lg w-full text-center animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-2xl font-bold mb-6">Execute Trade</h3>
+            <div className="flex gap-4 justify-center mb-6">
+              <button onClick={() => setTradeMode("BUY")} className={`px-6 py-2 rounded-lg font-bold transition ${tradeMode === "BUY" ? "bg-emerald-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"}`}>BUY</button>
+              <button onClick={() => setTradeMode("SELL")} className={`px-6 py-2 rounded-lg font-bold transition ${tradeMode === "SELL" ? "bg-red-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"}`}>SELL</button>
+            </div>
+            <div className="max-w-xs mx-auto mb-6">
+              <label className="block text-gray-400 text-sm mb-2">Number of Shares</label>
+              <input type="number" min="1" value={tradeShares} onChange={(e) => setTradeShares(Math.max(1, parseInt(e.target.value) || 1))} className="w-full bg-black border border-gray-700 rounded-xl p-4 text-center text-2xl font-bold focus:border-purple-500 outline-none" />
+            </div>
+            <div className="flex justify-between items-center bg-gray-900/50 p-4 rounded-xl mb-6">
+              <span className="text-gray-400">Total Estimated Cost</span>
+              <span className={`text-xl font-bold ${tradeMode === "BUY" && (tradeShares * profile.currentPrice) > (authUser?.auraCoins || 0) ? "text-red-500" : "text-emerald-400"}`}>
+                {(tradeShares * profile.currentPrice).toFixed(2)} Au
+              </span>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => {setTradeMode(null); setTradeShares(1);}} className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition">Cancel</button>
+              <button onClick={executeTrade} disabled={tradeMode === "BUY" && (tradeShares * profile.currentPrice) > (authUser?.auraCoins || 0)} className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                Confirm {tradeMode}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -13,21 +13,35 @@ export default function Dashboard() {
   const [filterYear, setFilterYear] = useState("");
   const [filterTrait, setFilterTrait] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [portfolio, setPortfolio] = useState<any[]>([]);
+  const [tradeMode, setTradeMode] = useState<"BUY" | "SELL" | null>(null);
+  const [tradeShares, setTradeShares] = useState(1);
   const router = useRouter();
 
-  const handleTrade = async (targetUser: any, e?: React.MouseEvent) => {
+  const openTradeModal = (targetUser: any, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!user?.id) return alert("Please log in to trade!");
+    setSelectedUser(targetUser);
+    setTradeMode("BUY");
+    setTradeShares(1);
+  };
+
+  const executeTrade = async () => {
+    if (!user?.id || !selectedUser || !tradeMode) return;
+    const totalCost = tradeShares * selectedUser.currentPrice;
     
+    if (tradeMode === "BUY" && totalCost > (user.auraCoins || 0)) {
+       return alert("Insufficient AURA balance!");
+    }
+
     try {
       const res = await fetch("http://localhost:8080/api/market/trade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ buyerId: user.id, targetUserId: targetUser.id, shares: 1, type: "BUY" })
+        body: JSON.stringify({ buyerId: user.id, targetUserId: selectedUser.id, shares: tradeShares, type: tradeMode })
       });
       if (res.ok) {
-        alert(`Successfully bought 1 share of ${targetUser.stockSymbol}! Your balance will update.`);
-        // Refresh local context natively
+        alert(`Successfully executed ${tradeMode} of ${tradeShares} shares of ${selectedUser.stockSymbol}! Your balance will update.`);
         const { refreshUser } = await import("@/context/AuthContext").then(() => ({ refreshUser: window.location.reload }));
         window.location.reload(); 
       } else {
@@ -50,6 +64,15 @@ export default function Dashboard() {
   useEffect(() => {
     fetchLeaderboard();
   }, [sortBy, filterYear, filterTrait]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`http://localhost:8080/api/user/portfolio/${user.id}`)
+        .then(res => res.json())
+        .then(data => { if (data.portfolio) setPortfolio(data.portfolio) })
+        .catch(console.error);
+    }
+  }, [user?.id]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -169,7 +192,7 @@ export default function Dashboard() {
                     </div>
 
                     {String(user?.id) !== String(stockUser.id) && (
-                      <button onClick={(e) => handleTrade(stockUser, e)} className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
+                      <button onClick={(e) => openTradeModal(stockUser, e)} className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
                         Trade
                       </button>
                     )}
@@ -183,9 +206,28 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="glass p-6 rounded-2xl">
               <h2 className="text-xl font-bold mb-4">Your Portfolio</h2>
-              <div className="text-center py-8 text-gray-500 border border-dashed border-gray-700 rounded-xl">
-                No stocks owned yet.
-              </div>
+              {portfolio.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 border border-dashed border-gray-700 rounded-xl">
+                  No stocks owned yet.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {portfolio.map((p, idx) => (
+                    <div key={idx} className="bg-black/40 border border-gray-800 p-3 rounded-xl flex justify-between items-center group cursor-pointer hover:bg-white/5 transition" onClick={() => { setSelectedUser({ id: p.targetUserId, stockSymbol: p.stockSymbol, name: p.name, currentPrice: p.currentPrice }); }}>
+                      <div>
+                        <div className="font-bold text-lg text-purple-400">{p.stockSymbol}</div>
+                        <div className="text-xs text-gray-500">{p.shares} Shares</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold">{p.currentPrice?.toFixed(2)} Au</div>
+                        <div className={`text-xs font-bold ${p.currentPrice >= p.averagePrice ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {p.currentPrice >= p.averagePrice ? '+' : ''}{(((p.currentPrice - p.averagePrice) / p.averagePrice) * 100).toFixed(1)}% P/L
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -209,32 +251,60 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="h-64 w-full bg-black/40 rounded-xl p-4 mb-6 border border-gray-800">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockChartData}>
-                  <XAxis dataKey="time" stroke="#4b5563" fontSize={12} />
-                  <YAxis stroke="#4b5563" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
-                  <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #374151', borderRadius: '8px' }} />
-                  <Area type="monotone" dataKey="price" stroke="#10b981" fill="#10b981" fillOpacity={0.2} strokeWidth={3} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {tradeMode ? (
+              <div className="bg-black/40 rounded-xl p-8 mb-6 border border-gray-800 text-center animate-in slide-in-from-bottom-2 fade-in">
+                <h3 className="text-2xl font-bold mb-6">Execute Trade</h3>
+                <div className="flex gap-4 justify-center mb-6">
+                  <button onClick={() => setTradeMode("BUY")} className={`px-6 py-2 rounded-lg font-bold transition ${tradeMode === "BUY" ? "bg-emerald-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"}`}>BUY</button>
+                  <button onClick={() => setTradeMode("SELL")} className={`px-6 py-2 rounded-lg font-bold transition ${tradeMode === "SELL" ? "bg-red-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"}`}>SELL</button>
+                </div>
+                <div className="max-w-xs mx-auto mb-6">
+                  <label className="block text-gray-400 text-sm mb-2">Number of Shares</label>
+                  <input type="number" min="1" value={tradeShares} onChange={(e) => setTradeShares(Math.max(1, parseInt(e.target.value) || 1))} className="w-full bg-black border border-gray-700 rounded-xl p-4 text-center text-2xl font-bold focus:border-purple-500 outline-none" />
+                </div>
+                <div className="flex justify-between items-center bg-gray-900/50 p-4 rounded-xl mb-6">
+                  <span className="text-gray-400">Total Estimated Cost</span>
+                  <span className={`text-xl font-bold ${tradeMode === "BUY" && (tradeShares * selectedUser.currentPrice) > (user?.auraCoins || 0) ? "text-red-500" : "text-emerald-400"}`}>
+                    {(tradeShares * selectedUser.currentPrice).toFixed(2)} Au
+                  </span>
+                </div>
+                <div className="flex gap-4">
+                  <button onClick={() => {setTradeMode(null); setTradeShares(1);}} className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition">Cancel</button>
+                  <button onClick={executeTrade} disabled={tradeMode === "BUY" && (tradeShares * selectedUser.currentPrice) > (user?.auraCoins || 0)} className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Confirm {tradeMode}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="h-64 w-full bg-black/40 rounded-xl p-4 mb-6 border border-gray-800">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={mockChartData}>
+                      <XAxis dataKey="time" stroke="#4b5563" fontSize={12} />
+                      <YAxis stroke="#4b5563" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
+                      <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #374151', borderRadius: '8px' }} />
+                      <Area type="monotone" dataKey="price" stroke="#10b981" fill="#10b981" fillOpacity={0.2} strokeWidth={3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
 
-            <div className="flex gap-4">
-              <button 
-                onClick={() => router.push(`/profile/${selectedUser.id}`)}
-                className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition"
-              >
-                Visit Profile
-              </button>
-              {String(user?.id) !== String(selectedUser.id) && (
-                <button onClick={() => handleTrade(selectedUser)} className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition">
-                  Trade {selectedUser.stockSymbol}
-                </button>
-              )}
-            </div>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => router.push(`/profile/${selectedUser.id}`)}
+                    className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition"
+                  >
+                    Visit Profile
+                  </button>
+                  {String(user?.id) !== String(selectedUser.id) && (
+                    <button onClick={() => {setTradeMode("BUY"); setTradeShares(1);}} className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition">
+                      Trade {selectedUser.stockSymbol}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
             
-            <button onClick={() => setSelectedUser(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+            <button onClick={() => {setSelectedUser(null); setTradeMode(null);}} className="absolute top-6 right-6 text-gray-500 hover:text-white">
               ✕
             </button>
           </div>

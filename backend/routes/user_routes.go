@@ -19,6 +19,7 @@ func RegisterUserRoutes(router *gin.RouterGroup) {
 		user.POST("/profile", createProfile)
 		user.POST("/ipo", scheduleIPO)
 		user.GET("/profile/:id", getProfile)
+		user.GET("/portfolio/:id", getPortfolio)
 	}
 }
 
@@ -130,4 +131,29 @@ func getProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"user": user,
 	})
+}
+
+type PortfolioResponse struct {
+	Shares       int     `json:"shares"`
+	AveragePrice float64 `json:"averagePrice"`
+	CurrentPrice float64 `json:"currentPrice"`
+	StockSymbol  string  `json:"stockSymbol"`
+	Name         string  `json:"name"`
+	TargetUserID uint    `json:"targetUserId"`
+}
+
+func getPortfolio(c *gin.Context) {
+	id := c.Param("id")
+	var portfolioItems []PortfolioResponse
+
+	if err := database.DB.Table("portfolios").
+		Select("portfolios.shares_owned as shares, portfolios.average_price, u.current_price, u.stock_symbol, u.name, u.id as target_user_id").
+		Joins("JOIN users u ON u.id = portfolios.stock_user_id").
+		Where("portfolios.owner_id = ? AND portfolios.deleted_at IS NULL", id).
+		Scan(&portfolioItems).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch portfolio"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"portfolio": portfolioItems})
 }
