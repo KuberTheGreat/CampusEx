@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState("price"); // price, popularity, recent
   const [filterYear, setFilterYear] = useState("");
   const [filterTrait, setFilterTrait] = useState("");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const mockChartData = [
     { time: "9:00", price: 10 },
@@ -116,16 +117,13 @@ export default function Dashboard() {
                   No stocks found currently.
                 </div>
               ) : (
-                leaderboard.map((user, idx) => (
-                  <div key={user.id} className="glass p-4 rounded-xl flex justify-between items-center hover:bg-white/5 transition cursor-pointer group">
+                leaderboard.map((stockUser, idx) => (
+                  <div key={stockUser.id} onClick={() => setSelectedUser(stockUser)} className="glass p-4 rounded-xl flex justify-between items-center hover:bg-white/5 transition cursor-pointer group">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-emerald-500 rounded-full flex items-center justify-center font-bold text-lg">
-                        {user.stockSymbol}
+                        {stockUser.stockSymbol}
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">{user.name}</h3>
-                        <p className="text-sm text-gray-400">{user.email}</p>
-                      </div>
+                      {/* Name/Email removed from card view as requested, keeping only symbol focus in the UI, maybe optional name */}
                     </div>
                     
                     {/* Sparkline simulation */}
@@ -138,15 +136,17 @@ export default function Dashboard() {
                     </div>
 
                     <div className="text-right">
-                      <div className="font-bold text-xl">${user.currentPrice?.toFixed(2) || "10.00"}</div>
+                      <div className="font-bold text-xl">Rs. {stockUser.currentPrice?.toFixed(2) || "10.00"}</div>
                       <div className="text-sm text-emerald-400 flex items-center justify-end gap-1">
                         <TrendingUp size={14} /> +2.4%
                       </div>
                     </div>
 
-                    <button className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
-                      Trade
-                    </button>
+                    {user?.id !== stockUser.id && (
+                      <button onClick={(e) => { e.stopPropagation(); console.log("Trade block opened") }} className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
+                        Trade
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -165,6 +165,52 @@ export default function Dashboard() {
 
         </div>
       </div>
+
+      {/* Modal for detailed stock view */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
+          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-3xl font-bold">{selectedUser.name}</h2>
+                <p className="text-gray-400">{selectedUser.email}</p>
+                <div className="mt-2 inline-flex items-center gap-2 bg-purple-900/30 text-purple-400 px-3 py-1 rounded-full text-sm font-bold">
+                  {selectedUser.stockSymbol}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-emerald-400">Rs. {selectedUser.currentPrice?.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="h-64 w-full bg-black/40 rounded-xl p-4 mb-6 border border-gray-800">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={mockChartData}>
+                  <XAxis dataKey="time" stroke="#4b5563" fontSize={12} />
+                  <YAxis stroke="#4b5563" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
+                  <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #374151', borderRadius: '8px' }} />
+                  <Area type="monotone" dataKey="price" stroke="#10b981" fill="#10b981" fillOpacity={0.2} strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="flex gap-4">
+              <button className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition">
+                Visit Profile
+              </button>
+              {user?.id !== selectedUser.id && (
+                <button className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition">
+                  Trade {selectedUser.stockSymbol}
+                </button>
+              )}
+            </div>
+            
+            <button onClick={() => setSelectedUser(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
