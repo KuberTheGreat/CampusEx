@@ -14,6 +14,7 @@ export default function Sidebar() {
     { name: "Event Bids", path: "/events", icon: "🏆" },
     { name: "News Feed", path: "/news", icon: "📰" },
     { name: "Publish Scoop", path: "/news/create", icon: "✍️" },
+    { name: "Power Shop", path: "/shop", icon: "⚡" },
   ];
 
   return (

@@ -59,6 +59,8 @@ func ConnectDB() {
 		&models.Event{},
 		&models.EventParticipant{},
 		&models.EventBid{},
+		&models.ShopItem{},
+		&models.UserInventory{},
 	)
 	if err != nil {
 		log.Fatal("Migration Failed. \n", err)
@@ -66,4 +68,20 @@ func ConnectDB() {
 
 	log.Println("Database Migrated Successfully")
 	DB = db
+	seedShopItems(db)
+}
+
+func seedShopItems(db *gorm.DB) {
+	var count int64
+	db.Model(&models.ShopItem{}).Count(&count)
+	if count == 0 {
+		items := []models.ShopItem{
+			{Name: "Trait Reveal Lens", Description: "Uncover one hidden trait of a targeted user.", Price: 200, Rarity: "Rare", RequiredScore: 400, EffectType: "REVEAL_TRAIT", ImageURL: "🔍"},
+			{Name: "Credibility Shield", Description: "Protect your stock from negative news impact for 24h.", Price: 500, Rarity: "Epic", RequiredScore: 800, EffectType: "SHIELD", ImageURL: "🛡️"},
+			{Name: "Market Whisper", Description: "Get early access to a breaking scoop before others.", Price: 1000, Rarity: "Legendary", RequiredScore: 1200, EffectType: "EARLY_NEWS", ImageURL: "🤫"},
+			{Name: "Aura Boost", Description: "Immediately gain +50 credibility score.", Price: 300, Rarity: "Common", RequiredScore: 0, EffectType: "BOOST_CRED", ImageURL: "✨"},
+		}
+		db.Create(&items)
+		log.Println("Seeded shop items.")
+	}
 }
