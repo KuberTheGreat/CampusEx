@@ -25,8 +25,8 @@ function getRadialPosition(index: number) {
   return [Math.cos(angle) * radius, 0, Math.sin(angle) * radius];
 }
 
-function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
-  const MAX_HEIGHT = 8; // Lowered to ensure text visibility on center bar
+function MarketScene({ users, maxPrice, onSelect, hoveredId, setHoveredId }: any) {
+  const MAX_HEIGHT = 8; // Native hard ceiling
 
   return (
     <>
@@ -56,7 +56,7 @@ function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
         
         {users.map((user: any, i: number) => {
           const [x, y, z] = getRadialPosition(i);
-          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 5));
+          const height = Math.max(0.5, ((user.currentPrice || 1) / maxPrice) * MAX_HEIGHT);
           const isHovered = hoveredId === user.id;
 
           return (
@@ -79,7 +79,7 @@ function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
         
         {users.map((user: any, i: number) => {
           const [x, y, z] = getRadialPosition(i);
-          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 5));
+          const height = Math.max(0.5, ((user.currentPrice || 1) / maxPrice) * MAX_HEIGHT);
           const isHovered = hoveredId === user.id;
 
           return (
@@ -171,6 +171,7 @@ export default function ThreeMarket() {
           <fog attach="fog" args={['#020813', 20, 100]} />
           <MarketScene 
             users={users} 
+            maxPrice={Math.max(...users.map((u: any) => u.currentPrice || 1), 10)}
             onSelect={setSelectedUser} 
             hoveredId={hoveredId} 
             setHoveredId={setHoveredId} 
@@ -246,6 +247,10 @@ export default function ThreeMarket() {
                 </div>
               )}
             </div>
+
+            <button onClick={() => window.location.href = `/profile/${selectedUser.id}`} className="mt-4 w-full py-3 border border-purple-500/50 hover:bg-purple-500/10 text-purple-400 font-bold tracking-widest transition rounded-xl text-sm">
+              VISIT PROFILE TERMINAL
+            </button>
 
           </div>
         )}
