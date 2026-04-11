@@ -14,12 +14,14 @@ type AuthContextType = {
   user: UserContextType | null;
   login: (userData: UserContextType) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: () => {},
   logout: () => {},
+  refreshUser: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -29,7 +31,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Restore session on mount
     const storedUser = localStorage.getItem("campusex_user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsed = JSON.parse(storedUser);
+      setUser(parsed);
+      // Background refresh immediately
+      fetch(`http://localhost:8080/api/user/profile/${parsed.id}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.user) {
+                setUser(data.user);
+                localStorage.setItem("campusex_user", JSON.stringify(data.user));
+            }
+        }).catch(err => console.error(err));
     }
   }, []);
 
@@ -43,8 +55,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("campusex_user");
   };
 
+  const refreshUser = async () => {
+    if (user?.id) {
+      try {
+        const res = await fetch(`http://localhost:8080/api/user/profile/${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+          localStorage.setItem("campusex_user", JSON.stringify(data.user));
+        }
+      } catch (e) {
+        console.error("Failed to refresh user", e);
+      }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

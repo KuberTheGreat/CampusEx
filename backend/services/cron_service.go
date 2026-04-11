@@ -85,7 +85,7 @@ func processNewsResolution(news models.News) error {
 					if aiResp.ImpactDirection == "NEGATIVE" {
 						modifier = 1.0 - (aiResp.Percentage / 100.0)
 					}
-					subject.StockPrice *= modifier
+					subject.CurrentPrice *= modifier
 					tx.Save(&subject)
 				}
 			}
@@ -95,7 +95,7 @@ func processNewsResolution(news models.News) error {
 		var publisher models.User
 		if err := tx.First(&publisher, news.PublisherID).Error; err == nil {
 			publisher.CredibilityScore += 50
-			publisher.StockPrice *= 1.02 // 2% bump
+			publisher.CurrentPrice *= 1.02 // 2% bump
 			tx.Save(&publisher)
 		}
 
@@ -124,7 +124,7 @@ func processNewsResolution(news models.News) error {
 			if publisher.CredibilityScore < 0 {
 				publisher.CredibilityScore = 0
 			}
-			publisher.StockPrice *= 0.98 // 2% drop
+			publisher.CurrentPrice *= 0.98 // 2% drop
 			tx.Save(&publisher)
 		}
 

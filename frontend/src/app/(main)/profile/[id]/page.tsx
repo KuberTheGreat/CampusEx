@@ -74,7 +74,7 @@ export default function ProfilePage() {
 
           <div className="bg-black/50 p-4 rounded-2xl border border-gray-800">
             <span className="text-gray-400 text-sm block mb-1">Current Valuation</span>
-            <span className="font-extrabold text-3xl text-emerald-400">Rs. {profile.currentPrice?.toFixed(2) || "10.00"}</span>
+            <span className="font-extrabold text-3xl text-emerald-400">{profile.currentPrice?.toFixed(2) || "10.00"} Au</span>
           </div>
 
           {String(authUser?.id) !== String(profile.id) && (
@@ -112,22 +112,44 @@ export default function ProfilePage() {
           <div className="glass p-8 rounded-3xl">
             <h2 className="text-xl font-bold mb-4">Traits & Quirks</h2>
             <p className="text-sm text-gray-400 mb-6 border-b border-gray-800 pb-4">
-              Traits represent this student's core competencies. Note: Some traits are permanently hidden on the market.
+              Traits represent this student's core competencies.
             </p>
-            <div className="flex flex-wrap gap-3">
-              {profile.Traits && profile.Traits.length > 0 ? (
-                profile.Traits.map((t: any) => (
-                  <div 
-                    key={t.id} 
-                    className={`px-4 py-2 rounded-full text-sm font-bold border ${t.isHidden ? 'bg-gray-900 border-gray-700 text-gray-500 line-through cursor-help' : 'bg-purple-900/40 border-purple-500 text-purple-300'}`}
-                    title={t.isHidden ? "Hidden Trait" : ""}
-                  >
-                    {t.isHidden ? "???" : t.name}
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500 italic">No traits listed.</div>
-              )}
+            
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Public File</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {profile.Traits?.filter((t: any) => !t.isHidden).length > 0 ? (
+                    profile.Traits.filter((t: any) => !t.isHidden).map((t: any) => (
+                      <div key={t.id} className="bg-purple-900/20 border border-purple-500/50 p-4 rounded-xl flex items-center justify-center text-center shadow-inner shadow-purple-500/10">
+                        <span className="font-bold text-purple-300">{t.name}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-500 italic col-span-full">No public traits available.</div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider flex justify-between items-center">
+                  <span>Classified File</span>
+                  <span className="text-xs bg-red-900/30 text-red-400 px-2 py-1 rounded-md">Market Mystery</span>
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {profile.Traits?.filter((t: any) => t.isHidden).length > 0 ? (
+                    profile.Traits.filter((t: any) => t.isHidden).map((t: any) => (
+                      <div key={t.id} className="bg-[#111] border border-gray-800 p-4 rounded-xl flex flex-col items-center justify-center gap-2 animate-pulse cursor-help" title="This trait is hidden from public markets to sustain volatility">
+                        <div className="h-4 w-16 bg-gray-800 rounded"></div>
+                        <div className="h-3 w-10 bg-gray-800 rounded"></div>
+                        <span className="sr-only">Hidden Trait</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-500 italic col-span-full">No classified traits.</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -15,6 +15,30 @@ export default function Dashboard() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const router = useRouter();
 
+  const handleTrade = async (targetUser: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!user?.id) return alert("Please log in to trade!");
+    
+    try {
+      const res = await fetch("http://localhost:8080/api/market/trade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyerId: user.id, targetUserId: targetUser.id, shares: 1, type: "BUY" })
+      });
+      if (res.ok) {
+        alert(`Successfully bought 1 share of ${targetUser.stockSymbol}! Your balance will update.`);
+        // Refresh local context natively
+        const { refreshUser } = await import("@/context/AuthContext").then(() => ({ refreshUser: window.location.reload }));
+        window.location.reload(); 
+      } else {
+        const error = await res.json();
+        alert(`Trade Failed: ${error.error}`);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
   const mockChartData = [
     { time: "9:00", price: 10 },
     { time: "11:00", price: 12 },
@@ -138,14 +162,14 @@ export default function Dashboard() {
                     </div>
 
                     <div className="text-right">
-                      <div className="font-bold text-xl">Rs. {stockUser.currentPrice?.toFixed(2) || "10.00"}</div>
+                      <div className="font-bold text-xl">{stockUser.currentPrice?.toFixed(2) || "10.00"} Au</div>
                       <div className="text-sm text-emerald-400 flex items-center justify-end gap-1">
                         <TrendingUp size={14} /> +2.4%
                       </div>
                     </div>
 
                     {String(user?.id) !== String(stockUser.id) && (
-                      <button onClick={(e) => { e.stopPropagation(); console.log("Trade block opened") }} className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
+                      <button onClick={(e) => handleTrade(stockUser, e)} className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
                         Trade
                       </button>
                     )}
@@ -181,7 +205,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-bold text-emerald-400">Rs. {selectedUser.currentPrice?.toFixed(2)}</div>
+                <div className="text-3xl font-bold text-emerald-400">{selectedUser.currentPrice?.toFixed(2)} Au</div>
               </div>
             </div>
 
@@ -204,7 +228,7 @@ export default function Dashboard() {
                 Visit Profile
               </button>
               {String(user?.id) !== String(selectedUser.id) && (
-                <button className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition">
+                <button onClick={() => handleTrade(selectedUser)} className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition">
                   Trade {selectedUser.stockSymbol}
                 </button>
               )}
