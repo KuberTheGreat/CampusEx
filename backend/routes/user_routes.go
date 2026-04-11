@@ -18,6 +18,7 @@ func RegisterUserRoutes(router *gin.RouterGroup) {
 	{
 		user.POST("/profile", createProfile)
 		user.POST("/ipo", scheduleIPO)
+		user.GET("/profile/:id", getProfile)
 	}
 }
 
@@ -114,5 +115,19 @@ func scheduleIPO(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "IPO scheduled successfully",
 		"user":    user,
+	})
+}
+
+func getProfile(c *gin.Context) {
+	id := c.Param("id")
+	var user models.User
+	
+	if err := database.DB.Preload("Traits").First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": user,
 	})
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Search, Filter, TrendingUp, TrendingDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const [filterYear, setFilterYear] = useState("");
   const [filterTrait, setFilterTrait] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const router = useRouter();
 
   const mockChartData = [
     { time: "9:00", price: 10 },
@@ -56,7 +58,7 @@ export default function Dashboard() {
           <div className="flex gap-4">
             <div className="glass p-3 rounded-xl flex items-center justify-between min-w-[150px]">
               <span className="text-gray-400 text-sm">Your AURA</span>
-              <span className="font-bold text-emerald-400 text-lg">{user ? user.auraCoins?.toFixed(2) : "0.00"}</span>
+              <span className="font-bold text-emerald-400 text-lg">{user && user.auraCoins !== undefined ? Number(user.auraCoins).toFixed(2) : "0.00"}</span>
             </div>
           </div>
         </header>
@@ -142,7 +144,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {user?.id !== stockUser.id && (
+                    {String(user?.id) !== String(stockUser.id) && (
                       <button onClick={(e) => { e.stopPropagation(); console.log("Trade block opened") }} className="hidden group-hover:block ml-4 px-4 py-2 bg-purple-600 rounded-lg font-bold hover:bg-purple-500">
                         Trade
                       </button>
@@ -195,10 +197,13 @@ export default function Dashboard() {
             </div>
 
             <div className="flex gap-4">
-              <button className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition">
+              <button 
+                onClick={() => router.push(`/profile/${selectedUser.id}`)}
+                className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition"
+              >
                 Visit Profile
               </button>
-              {user?.id !== selectedUser.id && (
+              {String(user?.id) !== String(selectedUser.id) && (
                 <button className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition">
                   Trade {selectedUser.stockSymbol}
                 </button>
