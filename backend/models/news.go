@@ -13,6 +13,7 @@ type News struct {
 	SubjectID       *uint          `gorm:"index" json:"subjectId"`
 	Subject         *User          `gorm:"foreignKey:SubjectID" json:"subject,omitempty"`
 	Content         string         `gorm:"type:text;not null" json:"content"`
+	EvidenceURL     string         `json:"evidenceUrl"`
 	Status          string         `gorm:"type:varchar(20);default:'PENDING'" json:"status"` // PENDING, CONFIRMED, REJECTED
 	EndsAt          time.Time      `gorm:"not null" json:"endsAt"`
 	FinalImpactDir  string         `gorm:"type:varchar(20)" json:"finalImpactDir"`           // POSITIVE, NEGATIVE, NEUTRAL

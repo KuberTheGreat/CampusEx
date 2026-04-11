@@ -22,6 +22,7 @@ type CreateNewsInput struct {
 	PublisherID uint   `json:"publisherId" binding:"required"`
 	SubjectID   *uint  `json:"subjectId"` // Optional now
 	Content     string `json:"content" binding:"required"`
+	EvidenceURL string `json:"evidenceUrl"`
 }
 
 func createNews(c *gin.Context) {
@@ -35,6 +36,7 @@ func createNews(c *gin.Context) {
 		PublisherID: input.PublisherID,
 		SubjectID:   input.SubjectID,
 		Content:     input.Content,
+		EvidenceURL: input.EvidenceURL,
 		Status:      "PENDING",
 		EndsAt:      time.Now().Add(5 * time.Minute),
 	}
