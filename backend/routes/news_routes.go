@@ -36,7 +36,7 @@ func createNews(c *gin.Context) {
 		SubjectID:   input.SubjectID,
 		Content:     input.Content,
 		Status:      "PENDING",
-		EndsAt:      time.Now().Add(24 * time.Hour), // Closes in 24 hours
+		EndsAt:      time.Now().Add(5 * time.Minute), // Closes in 5 mins for testing (normally 6 hours)
 	}
 
 	if err := database.DB.Create(&news).Error; err != nil {

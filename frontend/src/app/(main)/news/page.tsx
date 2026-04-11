@@ -14,6 +14,39 @@ type NewsItem = {
   finalImpactPct: number;
 };
 
+function Countdown({ endsAt }: { endsAt: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const end = new Date(endsAt).getTime();
+      const now = new Date().getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setTimeLeft("Evaluating");
+        return;
+      }
+
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (h > 0) {
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      } else {
+        setTimeLeft(`${m}m ${s}s`);
+      }
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, [endsAt]);
+
+  return <span>{timeLeft}</span>;
+}
+
 export default function NewsPage() {
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,12 +139,17 @@ export default function NewsPage() {
               <div key={news.id} className="glass p-6 md:p-8 rounded-2xl relative overflow-hidden group transition-all hover:bg-white/[0.08]">
                 
                 {/* Status Badge */}
-                <div className={`absolute top-0 right-0 px-4 py-1 text-xs font-bold tracking-wider uppercase rounded-bl-xl ${
+                <div className={`absolute top-0 right-0 px-4 py-1.5 flex items-center gap-2 text-xs font-bold tracking-wider uppercase rounded-bl-xl shadow-md ${
                   news.status === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-400 border-b border-l border-emerald-500/30' :
                   news.status === 'REJECTED' ? 'bg-red-500/20 text-red-400 border-b border-l border-red-500/30' :
                   'bg-yellow-500/20 text-yellow-400 border-b border-l border-yellow-500/30'
                 }`}>
                   {news.status}
+                  {news.status === 'PENDING' && (
+                    <span className="text-yellow-200/80 border-l border-yellow-500/40 pl-2 opacity-90 text-[10px] tracking-widest font-mono select-none">
+                      <Countdown endsAt={news.endsAt} />
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3 mb-4">
