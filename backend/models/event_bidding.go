@@ -38,7 +38,7 @@ type EventBid struct {
 	ParticipantID uint           `gorm:"index" json:"participantId"` // Refers to EventParticipant ID
 	BidderID      uint           `gorm:"index" json:"bidderId"`
 	BidType       string         `json:"bidType"` // For, Against
-	Amount        int            `json:"amount"`  // In Aura coins
+	Amount        float64        `json:"amount"`  // In Aura coins
 	Status        string         `gorm:"default:'Pending'" json:"status"` // Pending, Won, Lost
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`

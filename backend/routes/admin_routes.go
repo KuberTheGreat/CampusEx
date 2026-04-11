@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
@@ -87,7 +86,7 @@ func updateUserParams(c *gin.Context) {
 
 func banUser(c *gin.Context) {
 	id := c.Param("id")
-	
+
 	// Soft delete the user
 	if err := database.DB.Where("id = ?", id).Delete(&models.User{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute ban sequence"})

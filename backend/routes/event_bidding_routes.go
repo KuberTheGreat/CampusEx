@@ -38,7 +38,7 @@ type BidInput struct {
 	ParticipantID uint   `json:"participantId" binding:"required"`
 	BidderID      uint   `json:"bidderId" binding:"required"` // Should ideally come from auth token in production
 	BidType       string `json:"bidType" binding:"required"`
-	Amount        int    `json:"amount" binding:"required,gt=0"`
+	Amount        float64 `json:"amount" binding:"required,gt=0"`
 }
 
 func placeEventBid(c *gin.Context) {
@@ -198,8 +198,8 @@ func resolveEvent(c *gin.Context) {
 			return err
 		}
 
-		totalLoserPool := 0
-		totalWinnerPool := 0
+		totalLoserPool := 0.0
+		totalWinnerPool := 0.0
 		var winningBids []models.EventBid
 
 		// Determine winners and losers
@@ -228,16 +228,16 @@ func resolveEvent(c *gin.Context) {
 		// Distribute prizes
 		for _, wBid := range winningBids {
 			// They get their money back
-			payout := float64(wBid.Amount)
+			payout := wBid.Amount
 			
 			// Plus a percentage of the loser pool
 			if totalWinnerPool > 0 {
-				share := float64(wBid.Amount) / float64(totalWinnerPool)
-				payout += share * float64(totalLoserPool)
+				share := wBid.Amount / totalWinnerPool
+				payout += share * totalLoserPool
 			}
 
 			// Add to user balance
-			tx.Model(&models.User{}).Where("id = ?", wBid.BidderID).UpdateColumn("aura_coins", gorm.Expr("aura_coins + ?", int(payout)))
+			tx.Model(&models.User{}).Where("id = ?", wBid.BidderID).UpdateColumn("aura_coins", gorm.Expr("aura_coins + ?", payout))
 		}
 
 		// Mark event as resolved

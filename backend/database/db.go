@@ -56,8 +56,6 @@ func ConnectDB() {
 		&models.News{},
 		&models.Vote{},
 		&models.Admin{},
-		&models.StockOwnership{},
-		&models.StockTransaction{},
 		&models.Event{},
 		&models.EventParticipant{},
 		&models.EventBid{},
