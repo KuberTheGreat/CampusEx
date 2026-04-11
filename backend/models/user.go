@@ -12,11 +12,11 @@ type User struct {
 	Name             string         `json:"name"`
 	ProfilePicture   string         `json:"profilePicture"`
 	StockSymbol      string         `gorm:"uniqueIndex;not null" json:"stockSymbol"`
-	AuraCoins        float64        `gorm:"default:1000" json:"auraCoins"`
+	CurrentPrice     float64        `gorm:"default:100.0" json:"currentPrice"`
+	AuraCoins        int            `gorm:"default:1000" json:"auraCoins"`
 	CredibilityScore int            `gorm:"default:500" json:"credibilityScore"`
 	StockPrice       float64        `gorm:"default:10.0" json:"stockPrice"`
 	IsListed         bool           `gorm:"default:false" json:"isListed"`
-	CurrentPrice     float64        `gorm:"default:10.0" json:"currentPrice"`
 	TotalVolume      int            `gorm:"default:0" json:"totalVolume"`
 	IPODate          *time.Time     `json:"ipoDate"`
 	CreatedAt        time.Time      `json:"createdAt"`
