@@ -119,8 +119,8 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Public File</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {profile.Traits?.filter((t: any) => !t.isHidden).length > 0 ? (
-                    profile.Traits.filter((t: any) => !t.isHidden).map((t: any) => (
+                  {profile.traits?.filter((t: any) => !t.isHidden).length > 0 ? (
+                    profile.traits.filter((t: any) => !t.isHidden).map((t: any) => (
                       <div key={t.id} className="bg-purple-900/20 border border-purple-500/50 p-4 rounded-xl flex items-center justify-center text-center shadow-inner shadow-purple-500/10">
                         <span className="font-bold text-purple-300">{t.name}</span>
                       </div>
@@ -137,8 +137,8 @@ export default function ProfilePage() {
                   <span className="text-xs bg-red-900/30 text-red-400 px-2 py-1 rounded-md">Market Mystery</span>
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {profile.Traits?.filter((t: any) => t.isHidden).length > 0 ? (
-                    profile.Traits.filter((t: any) => t.isHidden).map((t: any) => (
+                  {profile.traits?.filter((t: any) => t.isHidden).length > 0 ? (
+                    profile.traits.filter((t: any) => t.isHidden).map((t: any) => (
                       <div key={t.id} className="bg-[#111] border border-gray-800 p-4 rounded-xl flex flex-col items-center justify-center gap-2 animate-pulse cursor-help" title="This trait is hidden from public markets to sustain volatility">
                         <div className="h-4 w-16 bg-gray-800 rounded"></div>
                         <div className="h-3 w-10 bg-gray-800 rounded"></div>
