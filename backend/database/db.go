@@ -44,7 +44,13 @@ func ConnectDB() {
 	log.Println("Connected Successfully to Database")
 	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-	err = db.AutoMigrate(&models.User{}, &models.Trait{})
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Trait{},
+		&models.Transaction{},
+		&models.Portfolio{},
+		&models.PriceHistory{},
+	)
 	if err != nil {
 		log.Fatal("Migration Failed. \n", err)
 	}

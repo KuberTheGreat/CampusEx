@@ -38,6 +38,7 @@ func main() {
 	api := r.Group("/api")
 	routes.RegisterAuthRoutes(api)
 	routes.RegisterUserRoutes(api)
+	routes.RegisterMarketRoutes(api)
 
 	port := os.Getenv("PORT")
 	if port == "" {
