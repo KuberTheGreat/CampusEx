@@ -26,7 +26,7 @@ function getRadialPosition(index: number) {
 }
 
 function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
-  const MAX_HEIGHT = 12; // Caps max visual block height
+  const MAX_HEIGHT = 8; // Lowered to ensure text visibility on center bar
 
   return (
     <>
@@ -37,8 +37,9 @@ function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
         minDistance={2} maxDistance={100} 
       />
       
-      {/* Dark Futuristic Grid - Only faint base, no highlighted center */}
-      <gridHelper args={[150, 150, "#02111a", "#02111a"]} position={[0, -0.01, 0]} />
+      {/* Restored uncolored wireframe base grids */}
+      <gridHelper args={[150, 150, "#333333", "#1a1a1a"]} position={[0, -0.01, 0]} />
+      <gridHelper args={[30, 30, "#444444", "#222222"]} position={[0, 0, 0]} />
 
       {/* Atmospheric Lighting */}
       <ambientLight intensity={0.5} />
@@ -55,7 +56,7 @@ function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
         
         {users.map((user: any, i: number) => {
           const [x, y, z] = getRadialPosition(i);
-          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 3));
+          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 5));
           const isHovered = hoveredId === user.id;
 
           return (
@@ -78,7 +79,7 @@ function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
         
         {users.map((user: any, i: number) => {
           const [x, y, z] = getRadialPosition(i);
-          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 3));
+          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 5));
           const isHovered = hoveredId === user.id;
 
           return (
