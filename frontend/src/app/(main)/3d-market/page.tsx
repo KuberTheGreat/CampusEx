@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Instances, Instance, Text, OrbitControls, Sparkles, SpotLight } from "@react-three/drei";
+import { Instances, Instance, Text, OrbitControls, Sparkles, SpotLight, Billboard } from "@react-three/drei";
 import { useAuth } from "@/context/AuthContext";
 
 // Math Algorithm for placing items in radial rings outwards
@@ -34,6 +34,8 @@ function MarketScene({ users, maxPrice, onSelect, hoveredId, setHoveredId }: any
         minPolarAngle={Math.PI / 2.5} 
         maxPolarAngle={Math.PI / 2.5} 
         enableZoom={false} 
+        autoRotate
+        autoRotateSpeed={0.5}
         minDistance={2} maxDistance={100} 
       />
       
@@ -63,9 +65,6 @@ function MarketScene({ users, maxPrice, onSelect, hoveredId, setHoveredId }: any
             <group key={user.id} position={[x, height / 2, z]}>
               <Instance
                 scale={isHovered ? [1.1, height, 1.1] : [1, height, 1]}
-                onClick={(e) => { e.stopPropagation(); onSelect(user); }}
-                onPointerOver={(e) => { e.stopPropagation(); setHoveredId(user.id); document.body.style.cursor = 'pointer'; }}
-                onPointerOut={(e) => { e.stopPropagation(); setHoveredId(null); document.body.style.cursor = 'auto'; }}
               />
             </group>
           );
@@ -83,23 +82,27 @@ function MarketScene({ users, maxPrice, onSelect, hoveredId, setHoveredId }: any
           const isHovered = hoveredId === user.id;
 
           return (
-            <group key={`wire_${user.id}`} position={[x, height / 2, z]} pointerEvents="none">
+            <group key={`wire_${user.id}`} position={[x, height / 2, z]}>
               <Instance
                 scale={isHovered ? [1.1, height, 1.1] : [1, height, 1]}
                 color={isHovered ? "#00ffff" : "#005555"}
+                onClick={(e) => { e.stopPropagation(); onSelect(user); }}
+                onPointerOver={(e) => { e.stopPropagation(); setHoveredId(user.id); document.body.style.cursor = 'pointer'; }}
+                onPointerOut={(e) => { e.stopPropagation(); setHoveredId(null); document.body.style.cursor = 'auto'; }}
               />
-              <Text 
-                position={[0, height / 2 + 0.8, 0]} 
-                fontSize={isHovered ? 0.6 : 0.4} 
-                color={isHovered ? "#ffffff" : "#00ffff"} 
-                anchorX="center" 
-                anchorY="middle"
-                outlineWidth={0.03}
-                outlineColor="#000"
-                material-toneMapped={false}
-              >
-                {user.stockSymbol || 'UKN'}
-              </Text>
+              <Billboard position={[0, height / 2 + 0.8, 0]}>
+                <Text 
+                  fontSize={isHovered ? 0.6 : 0.4} 
+                  color={isHovered ? "#ffffff" : "#00ffff"} 
+                  anchorX="center" 
+                  anchorY="middle"
+                  outlineWidth={0.03}
+                  outlineColor="#000"
+                  material-toneMapped={false}
+                >
+                  {user.stockSymbol || 'UKN'}
+                </Text>
+              </Billboard>
             </group>
           );
         })}
