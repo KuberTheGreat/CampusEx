@@ -12,8 +12,8 @@ import (
 func RegisterNewsRoutes(router *gin.RouterGroup) {
 	news := router.Group("/news")
 	{
-		news.POST("/", createNews)
-		news.GET("/", getNews)
+		news.POST("", createNews)
+		news.GET("", getNews)
 		news.POST("/:id/vote", voteNews)
 	}
 }
