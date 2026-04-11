@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { jwtDecode } from "jwt-decode";
 
 export default function Home() {
   const [step, setStep] = useState(0); // 0: Landing, 1: Auth, 2: Profile, 3: IPO, 4: Done
@@ -93,7 +94,6 @@ export default function Home() {
   };
 
   return (
-    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "your_google_client_id_here"}>
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
       {/* Animated gradient background mesh */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-60 animate-float" />
@@ -219,6 +219,5 @@ export default function Home() {
         )}
       </main>
     </div>
-    </GoogleOAuthProvider>
   );
 }
