@@ -47,9 +47,9 @@ export default function EventsBidding() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          eventId: biddingParticipant.eventId, 
-          participantId: biddingParticipant.id, 
-          bidderId: user.id, 
+          eventId: Number(biddingParticipant.eventId), 
+          participantId: Number(biddingParticipant.id), 
+          bidderId: Number(user.id), 
           bidType: bidMode, 
           amount: parseFloat(bidAmount.toString()) 
         })
