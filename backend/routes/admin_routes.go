@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
 	"github.com/gin-gonic/gin"
 )
