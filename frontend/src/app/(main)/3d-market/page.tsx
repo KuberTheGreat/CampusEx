@@ -9,59 +9,83 @@ import { useAuth } from "@/context/AuthContext";
 function getRadialPosition(index: number) {
   if (index === 0) return [0, 0, 0];
   let ring = 1;
-  let maxItemsInRing = 8;
+  let maxItemsInRing = 6;
   let itemsPassed = 1;
   
   while (index >= itemsPassed + maxItemsInRing) {
     itemsPassed += maxItemsInRing;
     ring++;
-    maxItemsInRing = ring * 8;
+    maxItemsInRing = ring * 6;
   }
   
   const indexInRing = index - itemsPassed;
-  // Add a slight offset based on ring to create a spiral effect if desired, but perfect circle is fine
   const angle = (indexInRing / maxItemsInRing) * Math.PI * 2;
-  const radius = ring * 2.5; 
+  const radius = ring * 1.3; 
   
   return [Math.cos(angle) * radius, 0, Math.sin(angle) * radius];
 }
 
 function MarketScene({ users, onSelect, hoveredId, setHoveredId }: any) {
+  const MAX_HEIGHT = 12; // Caps max visual block height
+
   return (
     <>
-      <OrbitControls maxPolarAngle={Math.PI / 2 - 0.05} minDistance={2} maxDistance={100} />
+      <OrbitControls 
+        minPolarAngle={Math.PI / 2.5} 
+        maxPolarAngle={Math.PI / 2.5} 
+        enableZoom={false} 
+        minDistance={2} maxDistance={100} 
+      />
       
-      {/* Dark Futuristic Grid */}
-      <gridHelper args={[150, 150, "#00aaaa", "#0a1f2e"]} position={[0, -0.01, 0]} />
-      <gridHelper args={[30, 30, "#00eeee", "#00eeee"]} position={[0, 0, 0]} /> {/* Inner intense grid */}
+      {/* Dark Futuristic Grid - Only faint base, no highlighted center */}
+      <gridHelper args={[150, 150, "#02111a", "#02111a"]} position={[0, -0.01, 0]} />
 
       {/* Atmospheric Lighting */}
-      <ambientLight intensity={0.2} />
-      <pointLight position={[0, 20, 0]} intensity={3} color="#00ffff" distance={100} />
-      <directionalLight position={[10, 10, 5]} intensity={1} color="#aaaaff" />
-      <SpotLight position={[0, 30, 0]} angle={0.5} penumbra={1} intensity={2} color="#00aaff" />
+      <ambientLight intensity={0.5} />
+      <pointLight position={[0, 20, 0]} intensity={2} color="#00ffff" distance={100} />
+      <directionalLight position={[10, 10, 5]} intensity={1} color="#00aaaa" />
 
       {/* Center ambient energy */}
-      <Sparkles count={200} scale={10} size={5} speed={0.4} color="#00ffff" />
+      <Sparkles count={100} scale={5} size={3} speed={0.4} color="#00ffff" />
 
+      {/* LAYER 1: Core Solid Black Bodies */}
       <Instances limit={1000} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#0b1b3d" emissive="#00aaaa" emissiveIntensity={0.2} metalness={0.8} roughness={0.2} />
+        <meshStandardMaterial color="#020813" metalness={0.9} roughness={0.1} />
         
         {users.map((user: any, i: number) => {
           const [x, y, z] = getRadialPosition(i);
-          // Calculate height natively.
-          const height = Math.max(0.5, (user.currentPrice || 10) / 2);
+          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 3));
           const isHovered = hoveredId === user.id;
 
           return (
             <group key={user.id} position={[x, height / 2, z]}>
               <Instance
-                scale={isHovered ? [1.2, height, 1.2] : [1, height, 1]}
-                color={isHovered ? "#00ffff" : "white"}
+                scale={isHovered ? [1.1, height, 1.1] : [1, height, 1]}
                 onClick={(e) => { e.stopPropagation(); onSelect(user); }}
                 onPointerOver={(e) => { e.stopPropagation(); setHoveredId(user.id); document.body.style.cursor = 'pointer'; }}
                 onPointerOut={(e) => { e.stopPropagation(); setHoveredId(null); document.body.style.cursor = 'auto'; }}
+              />
+            </group>
+          );
+        })}
+      </Instances>
+
+      {/* LAYER 2: Wireframe Neon Edges Overlaying the Bodies */}
+      <Instances limit={1000}>
+        <boxGeometry args={[1.001, 1.001, 1.001]} />
+        <meshBasicMaterial wireframe={true} transparent opacity={0.6} />
+        
+        {users.map((user: any, i: number) => {
+          const [x, y, z] = getRadialPosition(i);
+          const height = Math.min(MAX_HEIGHT, Math.max(0.5, (user.currentPrice || 10) / 3));
+          const isHovered = hoveredId === user.id;
+
+          return (
+            <group key={`wire_${user.id}`} position={[x, height / 2, z]} pointerEvents="none">
+              <Instance
+                scale={isHovered ? [1.1, height, 1.1] : [1, height, 1]}
+                color={isHovered ? "#00ffff" : "#005555"}
               />
               <Text 
                 position={[0, height / 2 + 0.8, 0]} 
