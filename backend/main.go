@@ -6,6 +6,7 @@ import (
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/routes"
+	"github.com/CampusEx/backend/services"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -17,6 +18,8 @@ func main() {
 	}
 
 	database.ConnectDB()
+
+	go services.StartNewsCronJob()
 
 	r := gin.Default()
 
