@@ -90,7 +90,7 @@ func createProfile(c *gin.Context) {
 }
 
 type IPOInput struct {
-	UserID  uint      `json:"userId" binding:"required"`
+	Email   string    `json:"email" binding:"required"`
 	IPODate time.Time `json:"ipoDate" binding:"required"`
 }
 
@@ -102,7 +102,7 @@ func scheduleIPO(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := database.DB.First(&user, input.UserID).Error; err != nil {
+	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}

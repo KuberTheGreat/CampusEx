@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Search, Filter, TrendingUp, TrendingDown } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [sortBy, setSortBy] = useState("price"); // price, popularity, recent
   const [filterYear, setFilterYear] = useState("");
@@ -53,7 +55,7 @@ export default function Dashboard() {
           <div className="flex gap-4">
             <div className="glass p-3 rounded-xl flex items-center justify-between min-w-[150px]">
               <span className="text-gray-400 text-sm">Your AURA</span>
-              <span className="font-bold text-emerald-400 text-lg">1,000.00</span>
+              <span className="font-bold text-emerald-400 text-lg">{user ? user.auraCoins?.toFixed(2) : "0.00"}</span>
             </div>
           </div>
         </header>

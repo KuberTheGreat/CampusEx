@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
   const [step, setStep] = useState(0); // 0: Landing, 1: Auth, 2: Profile, 3: IPO, 4: Done
@@ -11,6 +12,8 @@ export default function Home() {
   const [traits, setTraits] = useState("");
   const [stockSymbol, setStockSymbol] = useState("");
   const [ipoDate, setIpoDate] = useState("");
+  const router = useRouter();
+  const { login } = useAuth();
 
   const handleGoogleLoginSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
@@ -23,9 +26,16 @@ export default function Home() {
 
         const data = await res.json();
         if (res.ok) {
-          setEmail(data.email || "");
-          setName(data.name || "");
-          setStep(2);
+          if (data.needs_profile === false && data.user) {
+            // Returning user, skip onboarding entirely
+            login(data.user);
+            router.push("/dashboard");
+          } else {
+            // New user, push to profile creation
+            setEmail(data.email || "");
+            setName(data.name || "");
+            setStep(2);
+          }
         } else {
           alert("Login failed: " + data.error);
         }
@@ -41,13 +51,45 @@ export default function Home() {
 
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call to backend
-    setStep(3);
+    try {
+      const traitList = traits.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+      const res = await fetch("http://localhost:8080/api/user/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name, stockSymbol, traits: traitList }),
+      });
+      if (res.ok) {
+        setStep(3);
+      } else {
+        const errorData = await res.json();
+        alert("Error saving profile: " + errorData.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleScheduleIPO = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(4);
+    try {
+      // Backend expects ipoDate as time string, e.g. RFC3339
+      const parsedDate = new Date(ipoDate).toISOString();
+      const res = await fetch("http://localhost:8080/api/user/ipo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, ipoDate: parsedDate }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Save user context locally
+        login(data.user);
+        setStep(4);
+      } else {
+        alert("Error scheduling IPO: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -170,7 +212,7 @@ export default function Home() {
               <span className="text-gray-400">Initial Balance</span>
               <span className="font-bold text-emerald-400">1000 AURA</span>
             </div>
-            <button className="w-full bg-gray-800 p-3 rounded-lg text-white hover:bg-gray-700 transition">
+            <button onClick={() => router.push("/dashboard")} className="w-full bg-gray-800 p-3 rounded-lg text-white hover:bg-gray-700 transition">
               Go To Dashboard
             </button>
           </div>
