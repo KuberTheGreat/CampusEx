@@ -20,6 +20,7 @@ func RegisterUserRoutes(router *gin.RouterGroup) {
 		user.POST("/ipo", scheduleIPO)
 		user.GET("/profile/:id", getProfile)
 		user.GET("/portfolio/:id", getPortfolio)
+		user.GET("/search", searchUsers)
 	}
 }
 
@@ -156,4 +157,22 @@ func getPortfolio(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"portfolio": portfolioItems})
+}
+
+func searchUsers(c *gin.Context) {
+	query := c.Query("q")
+	if query == "" {
+		c.JSON(http.StatusOK, gin.H{"users": []models.User{}})
+		return
+	}
+
+	var users []models.User
+	// Search by name or stock symbol, case-insensitive. Allow all users (even unlisted)
+	term := "%" + query + "%"
+	if err := database.DB.Where("name ILIKE ? OR stock_symbol ILIKE ?", term, term).Limit(10).Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search users: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": users})
 }

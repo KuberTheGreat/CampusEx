@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 type NewsItem = {
   id: number;
@@ -48,9 +49,9 @@ function Countdown({ endsAt }: { endsAt: string }) {
 }
 
 export default function NewsPage() {
+  const { user } = useAuth();
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState(1); // MOCK logged in user
 
   useEffect(() => {
     fetchNews();
@@ -71,12 +72,12 @@ export default function NewsPage() {
   };
 
   const handleVote = async (newsId: number, isConfirmed: boolean) => {
-    if (!currentUserId) return alert("Please set a User ID first.");
+    if (!user?.id) return alert("Please log in first.");
     try {
       const res = await fetch(`http://localhost:8080/api/news/${newsId}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUserId, isConfirmed }),
+        body: JSON.stringify({ userId: user.id, isConfirmed }),
       });
       if (res.ok) {
         alert("Vote recorded!");
@@ -107,16 +108,13 @@ export default function NewsPage() {
           </div>
           
           <div className="flex gap-4 items-center">
-            <div className="flex bg-white/5 p-1 rounded-lg border border-white/10 glass">
-              <span className="px-3 py-2 text-sm text-gray-400">Mock User ID:</span>
-              <input 
-                type="number" 
-                value={currentUserId} 
-                onChange={(e) => setCurrentUserId(Number(e.target.value))}
-                className="w-16 bg-transparent border-none text-white focus:outline-none focus:ring-0 text-center"
-              />
-            </div>
-            <Link href="/news/create" className="px-6 py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-semibold rounded-xl transition-all shadow-lg animate-pulse-glow text-sm md:text-base">
+            {user && (
+              <div className="flex items-center bg-white/5 px-4 py-2 rounded-xl border border-white/10 glass text-sm">
+                <span className="text-gray-400 mr-2">Logged in as:</span>
+                <span className="text-white font-medium">{user.name}</span>
+              </div>
+            )}
+            <Link href="/news/create" className="px-6 py-3 bg-(--primary) hover:bg-(--primary-hover) text-white font-semibold rounded-xl transition-all shadow-lg animate-pulse-glow text-sm md:text-base">
               Publish News
             </Link>
           </div>
