@@ -55,6 +55,7 @@ func ConnectDB() {
 		&models.PriceHistory{},
 		&models.News{},
 		&models.Vote{},
+		&models.Admin{},
 	)
 	if err != nil {
 		log.Fatal("Migration Failed. \n", err)
