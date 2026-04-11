@@ -50,6 +50,24 @@ export default function Home() {
     console.error("Google Login Failed");
   };
 
+  const handleDevBypass = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/market/leaderboard");
+      const data = await res.json();
+      if (res.ok && data.leaderboard && data.leaderboard.length > 0) {
+        // Pick the first user in the DB
+        const mockUser = data.leaderboard[0];
+        login(mockUser);
+        router.push("/dashboard");
+      } else {
+        alert("No users in DB to bypass with. Please create one securely first.");
+      }
+    } catch(e) {
+      console.error(e);
+      alert("Failed to bypass login");
+    }
+  };
+
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -122,7 +140,7 @@ export default function Home() {
           <div className="glass p-12 rounded-3xl w-full max-w-md text-center space-y-6">
             <h2 className="text-3xl font-bold">Secure Access</h2>
             <p className="text-gray-400">Verify your college identity to continue.</p>
-            <div className="flex justify-center mt-6">
+            <div className="flex flex-col items-center gap-4 mt-6">
               <GoogleLogin
                 onSuccess={handleGoogleLoginSuccess}
                 onError={handleGoogleLoginError}
@@ -130,6 +148,13 @@ export default function Home() {
                 size="large"
                 theme="outline"
               />
+              <div className="text-gray-500 text-sm">OR</div>
+              <button 
+                onClick={handleDevBypass}
+                className="px-6 py-2 bg-gray-800 text-gray-300 rounded-lg font-bold hover:bg-gray-700 transition"
+              >
+                Local Dev Bypass (Auto Login)
+              </button>
             </div>
           </div>
         )}
