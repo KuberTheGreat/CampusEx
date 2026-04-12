@@ -75,33 +75,42 @@ func runPriceLoop(stop chan struct{}, interval time.Duration) {
 func calculateAndUpdatePrices() {
 	today := time.Now().UTC().Format("2006-01-02")
 
-	// Fetch all listed users
-	var users []models.User
-	if err := database.DB.Where("is_listed = ?", true).Find(&users).Error; err != nil {
-		log.Println("[PriceEngine] Error fetching users:", err)
+	// Fetch all daily stats that have unprocessed volume
+	var allStats []models.DailyStats
+	if err := database.DB.Where("date = ? AND (buy_volume > 0 OR sell_volume > 0)", today).Find(&allStats).Error; err != nil {
+		log.Println("[PriceEngine] Error fetching daily stats:", err)
 		return
+	}
+
+	if len(allStats) == 0 {
+		return // Nothing to process
 	}
 
 	updatedCount := 0
 
-	for _, u := range users {
-		// Fetch today's volume stats for this user
-		var stats models.DailyStats
-		err := database.DB.Where("stock_user_id = ? AND date = ?", u.ID, today).First(&stats).Error
-		if err != nil {
-			// No trades today for this stock — skip
-			continue
-		}
-
+	for _, stats := range allStats {
 		totalVolume := stats.BuyVolume + stats.SellVolume
 		if totalVolume == 0 {
 			continue
 		}
 
-		// Core formula: changeFactor = (buyVolume - sellVolume) / totalVolume
-		changeFactor := float64(stats.BuyVolume-stats.SellVolume) / float64(totalVolume)
+		// Fetch the stock user
+		var u models.User
+		if err := database.DB.First(&u, stats.StockUserID).Error; err != nil {
+			continue
+		}
 
-		// Clamp to ±10%
+		// Direction: which way the pressure pushes (+1 = pure buy, -1 = pure sell)
+		direction := float64(stats.BuyVolume-stats.SellVolume) / float64(totalVolume)
+
+		// Magnitude: how significant is this volume?
+		// Scale logarithmically so 1 share = mild, 100 shares = strong
+		// Base impact of 0.5% per unit of log-volume, scaled by direction
+		magnitude := math.Log2(float64(totalVolume) + 1) * 0.005 // ~0.5% per doubling of volume
+
+		changeFactor := direction * magnitude
+
+		// Clamp to ±10% per tick
 		changeFactor = math.Max(-0.10, math.Min(0.10, changeFactor))
 
 		newPrice := u.CurrentPrice * (1.0 + changeFactor)
@@ -112,7 +121,6 @@ func calculateAndUpdatePrices() {
 		}
 
 		// Update the user's price
-		u.CurrentPrice = newPrice
 		database.DB.Model(&u).Update("current_price", newPrice)
 
 		// Record price history — never overwrite, always append
@@ -122,6 +130,15 @@ func calculateAndUpdatePrices() {
 			RecordedAt: time.Now().UTC(),
 		}
 		database.DB.Create(&history)
+
+		// CRITICAL: Reset the consumed volume so it's not re-processed next tick
+		database.DB.Model(&stats).Updates(map[string]interface{}{
+			"buy_volume":  0,
+			"sell_volume": 0,
+		})
+
+		log.Printf("[PriceEngine] %s: buyVol=%d sellVol=%d dir=%.2f mag=%.4f change=%.4f newPrice=%.2f",
+			u.StockSymbol, stats.BuyVolume, stats.SellVolume, direction, magnitude, changeFactor, newPrice)
 
 		updatedCount++
 	}
