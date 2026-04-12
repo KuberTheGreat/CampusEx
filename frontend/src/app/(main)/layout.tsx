@@ -6,9 +6,9 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen bg-(--background)">
+    <div className="flex min-h-screen" style={{ background: "var(--bg)" }}>
       <Sidebar />
-      <main className="flex-1 md:ml-64 relative min-h-screen overflow-x-hidden">
+      <main className="flex-1 ml-[68px] relative min-h-screen overflow-x-hidden transition-all duration-300">
         {children}
       </main>
     </div>

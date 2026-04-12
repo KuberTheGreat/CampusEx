@@ -22,30 +22,16 @@ export default function PortfolioPage() {
   const [selectedStock, setSelectedStock] = useState<PortfolioItem | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchPortfolio();
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (selectedStock) {
-      fetchHistory(selectedStock.targetUserId);
-    }
-  }, [selectedStock?.targetUserId]);
+  useEffect(() => { if (user?.id) fetchPortfolio(); }, [user?.id]);
+  useEffect(() => { if (selectedStock) fetchHistory(selectedStock.targetUserId); }, [selectedStock?.targetUserId]);
 
   const fetchPortfolio = async () => {
     try {
       const res = await fetch(`http://localhost:8080/api/user/portfolio/${user!.id}`);
       const data = await res.json();
-      if (res.ok && data.portfolio) {
-        setPortfolio(data.portfolio);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      if (res.ok && data.portfolio) setPortfolio(data.portfolio);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   const fetchHistory = async (userId: number) => {
@@ -53,134 +39,88 @@ export default function PortfolioPage() {
       const res = await fetch(`http://localhost:8080/api/market/stocks/${userId}/history?range=7d`);
       const data = await res.json();
       if (res.ok && data.history?.length > 0) {
-        setChartData(data.history.map((h: any) => ({
-          time: new Date(h.recordedAt).toLocaleString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
-          price: parseFloat(h.price.toFixed(2)),
-        })));
-      } else {
-        setChartData([]);
-      }
-    } catch {
-      setChartData([]);
-    }
+        setChartData(data.history.map((h: any) => ({ time: new Date(h.recordedAt).toLocaleString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }), price: parseFloat(h.price.toFixed(2)) })));
+      } else setChartData([]);
+    } catch { setChartData([]); }
   };
 
-  // Computed totals
-  const totalInvested = portfolio.reduce((sum, p) => sum + (p.shares * p.averagePrice), 0);
-  const totalCurrentValue = portfolio.reduce((sum, p) => sum + (p.shares * p.currentPrice), 0);
-  const totalPL = totalCurrentValue - totalInvested;
-  const totalPLPercent = totalInvested > 0 ? ((totalPL / totalInvested) * 100) : 0;
+  const totalInvested = portfolio.reduce((s, p) => s + p.shares * p.averagePrice, 0);
+  const totalCurrent = portfolio.reduce((s, p) => s + p.shares * p.currentPrice, 0);
+  const totalPL = totalCurrent - totalInvested;
+  const totalPLPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-gray-500 text-xl">Please log in to view your portfolio.</p>
-      </div>
-    );
-  }
+  if (!user) return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>Please log in to view your portfolio.</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
-      {/* Background */}
-      <div className="fixed top-[-10%] right-[-15%] w-[50%] h-[50%] bg-purple-900 rounded-full mix-blend-multiply blur-[160px] opacity-30" />
-      <div className="fixed bottom-[-10%] left-[-15%] w-[50%] h-[50%] bg-emerald-900 rounded-full mix-blend-multiply blur-[160px] opacity-30" />
-
-      <div className="max-w-5xl mx-auto z-10 relative">
-        <header className="mb-10">
-          <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">
-            Your Portfolio
-          </h1>
-          <p className="text-gray-500 mt-2">Track your investments, unrealized gains, and stock performance.</p>
+    <div className="min-h-screen p-6 animate-fade-in" style={{ background: "var(--bg)" }}>
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Your Portfolio</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Track investments, unrealized gains, and performance.</p>
         </header>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-          <div className="glass p-5 rounded-2xl border border-white/10">
-            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">AURA Balance</div>
-            <div className="text-2xl font-bold text-amber-400">{Number(user.auraCoins || 0).toFixed(2)}</div>
-          </div>
-          <div className="glass p-5 rounded-2xl border border-white/10">
-            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total Invested</div>
-            <div className="text-2xl font-bold text-blue-400">{totalInvested.toFixed(2)} Au</div>
-          </div>
-          <div className="glass p-5 rounded-2xl border border-white/10">
-            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Current Value</div>
-            <div className="text-2xl font-bold text-purple-400">{totalCurrentValue.toFixed(2)} Au</div>
-          </div>
-          <div className="glass p-5 rounded-2xl border border-white/10">
-            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Unrealized P/L</div>
-            <div className={`text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)} Au
-              <span className="text-sm ml-2 opacity-70">({totalPLPercent >= 0 ? '+' : ''}{totalPLPercent.toFixed(1)}%)</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "AURA Balance", value: Number(user.auraCoins || 0).toFixed(2), color: "var(--primary)" },
+            { label: "Total Invested", value: `${totalInvested.toFixed(2)} Au`, color: "var(--accent-blue)" },
+            { label: "Current Value", value: `${totalCurrent.toFixed(2)} Au`, color: "var(--accent-purple)" },
+            { label: "Unrealized P/L", value: `${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)} Au`, color: totalPL >= 0 ? "var(--accent-green)" : "var(--accent-red)", sub: `(${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(1)}%)` },
+          ].map((c, i) => (
+            <div key={i} className="card p-5">
+              <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>{c.label}</div>
+              <div className="text-xl font-extrabold" style={{ color: c.color }}>{c.value} {c.sub && <span className="text-sm opacity-70">{c.sub}</span>}</div>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Holdings Table */}
-        <div className="glass rounded-2xl border border-white/10 overflow-hidden">
-          <div className="p-5 border-b border-white/10">
-            <h2 className="text-lg font-bold">Holdings ({portfolio.length})</h2>
+        {/* Holdings */}
+        <div className="card overflow-hidden">
+          <div className="p-5 border-b" style={{ borderColor: "var(--border)" }}>
+            <h2 className="font-bold" style={{ color: "var(--text)" }}>Holdings ({portfolio.length})</h2>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-gray-500">Loading portfolio...</div>
+            <div className="p-12 text-center" style={{ color: "var(--text-muted)" }}>Loading...</div>
           ) : portfolio.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="text-gray-500 text-lg mb-4">You don't own any stocks yet.</div>
-              <button onClick={() => router.push("/dashboard")} className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold transition">
-                Browse Market
-              </button>
+              <p className="text-lg mb-4" style={{ color: "var(--text-muted)" }}>You don't own any stocks yet.</p>
+              <button onClick={() => router.push("/dashboard")} className="btn-primary">Browse Market</button>
             </div>
           ) : (
-            <table className="w-full text-left">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs text-gray-500 uppercase tracking-widest border-b border-white/5">
-                  <th className="p-4">Stock</th>
-                  <th className="p-4 text-right">Shares</th>
-                  <th className="p-4 text-right">Avg. Buy Price</th>
-                  <th className="p-4 text-right">Current Price</th>
-                  <th className="p-4 text-right">Invested</th>
-                  <th className="p-4 text-right">Current Value</th>
-                  <th className="p-4 text-right">P/L</th>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  {["Stock", "Shares", "Avg Buy", "Current", "Invested", "Value", "P/L"].map(h => (
+                    <th key={h} className="p-4 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {portfolio.map((p, idx) => {
-                  const invested = p.shares * p.averagePrice;
-                  const currentVal = p.shares * p.currentPrice;
-                  const pl = currentVal - invested;
-                  const plPct = invested > 0 ? ((pl / invested) * 100) : 0;
-                  const isProfit = pl >= 0;
-
+                {portfolio.map((p, i) => {
+                  const inv = p.shares * p.averagePrice;
+                  const cur = p.shares * p.currentPrice;
+                  const pl = cur - inv;
+                  const plPct = inv > 0 ? (pl / inv) * 100 : 0;
+                  const profit = pl >= 0;
                   return (
-                    <tr
-                      key={idx}
-                      onClick={() => setSelectedStock(p)}
-                      className="border-b border-white/5 hover:bg-white/5 transition cursor-pointer group"
-                    >
+                    <tr key={i} onClick={() => setSelectedStock(p)} className="cursor-pointer transition-all" style={{ borderBottom: "1px solid var(--border)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-emerald-500 rounded-full flex items-center justify-center font-bold text-sm">
-                            {p.stockSymbol}
-                          </div>
-                          <div>
-                            <div className="font-bold text-white group-hover:text-purple-300 transition">{p.name}</div>
-                            <div className="text-xs text-gray-500">{p.stockSymbol}</div>
-                          </div>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs" style={{ background: "var(--primary)" }}>{p.stockSymbol}</div>
+                          <div><div className="font-bold" style={{ color: "var(--text)" }}>{p.name}</div><div className="text-xs" style={{ color: "var(--text-muted)" }}>{p.stockSymbol}</div></div>
                         </div>
                       </td>
-                      <td className="p-4 text-right font-bold">{p.shares}</td>
-                      <td className="p-4 text-right text-gray-400">{p.averagePrice.toFixed(2)}</td>
-                      <td className="p-4 text-right font-bold">{p.currentPrice.toFixed(2)}</td>
-                      <td className="p-4 text-right text-blue-400">{invested.toFixed(2)}</td>
-                      <td className="p-4 text-right text-purple-400">{currentVal.toFixed(2)}</td>
-                      <td className="p-4 text-right">
-                        <span className={`font-bold ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {isProfit ? '+' : ''}{pl.toFixed(2)}
-                        </span>
-                        <div className={`text-xs ${isProfit ? 'text-emerald-400/60' : 'text-red-400/60'}`}>
-                          {isProfit ? '+' : ''}{plPct.toFixed(1)}%
-                        </div>
+                      <td className="p-4 font-bold" style={{ color: "var(--text)" }}>{p.shares}</td>
+                      <td className="p-4" style={{ color: "var(--text-secondary)" }}>{p.averagePrice.toFixed(2)}</td>
+                      <td className="p-4 font-bold" style={{ color: "var(--text)" }}>{p.currentPrice.toFixed(2)}</td>
+                      <td className="p-4" style={{ color: "var(--accent-blue)" }}>{inv.toFixed(2)}</td>
+                      <td className="p-4" style={{ color: "var(--accent-purple)" }}>{cur.toFixed(2)}</td>
+                      <td className="p-4">
+                        <span className="font-bold" style={{ color: profit ? "var(--accent-green)" : "var(--accent-red)" }}>{profit ? "+" : ""}{pl.toFixed(2)}</span>
+                        <div className="text-xs" style={{ color: profit ? "var(--accent-green)" : "var(--accent-red)", opacity: 0.7 }}>{profit ? "+" : ""}{plPct.toFixed(1)}%</div>
                       </td>
                     </tr>
                   );
@@ -191,77 +131,46 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      {/* Stock Detail Modal */}
+      {/* Detail Modal */}
       {selectedStock && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedStock(null)}>
-          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-lg w-full relative" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setSelectedStock(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white text-xl">✕</button>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }} onClick={() => setSelectedStock(null)}>
+          <div className="card p-8 max-w-lg w-full relative animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setSelectedStock(null)} className="absolute top-4 right-5 text-xl" style={{ color: "var(--text-muted)" }}>✕</button>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-emerald-500 rounded-full flex items-center justify-center font-bold text-xl">
-                {selectedStock.stockSymbol}
-              </div>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg" style={{ background: "var(--primary)" }}>{selectedStock.stockSymbol}</div>
               <div>
-                <h2 className="text-2xl font-bold">{selectedStock.name}</h2>
-                <p className="text-gray-400 text-sm">{selectedStock.stockSymbol} · {selectedStock.shares} Shares</p>
+                <h2 className="text-xl font-extrabold" style={{ color: "var(--text)" }}>{selectedStock.name}</h2>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{selectedStock.stockSymbol} · {selectedStock.shares} Shares</p>
               </div>
             </div>
-
-            {/* Metrics */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-black/40 border border-gray-800 p-3 rounded-xl">
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Avg. Buy</div>
-                <div className="text-lg font-bold text-blue-400">{selectedStock.averagePrice.toFixed(2)} Au</div>
-              </div>
-              <div className="bg-black/40 border border-gray-800 p-3 rounded-xl">
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Current</div>
-                <div className="text-lg font-bold text-purple-400">{selectedStock.currentPrice.toFixed(2)} Au</div>
-              </div>
-              <div className="bg-black/40 border border-gray-800 p-3 rounded-xl">
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest">Invested</div>
-                <div className="text-lg font-bold">{(selectedStock.shares * selectedStock.averagePrice).toFixed(2)} Au</div>
-              </div>
-              <div className="bg-black/40 border border-gray-800 p-3 rounded-xl">
-                <div className="text-[10px] text-gray-500 uppercase tracking-widest">P/L</div>
-                {(() => {
-                  const pl = (selectedStock.currentPrice - selectedStock.averagePrice) * selectedStock.shares;
-                  return <div className={`text-lg font-bold ${pl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{pl >= 0 ? '+' : ''}{pl.toFixed(2)} Au</div>;
-                })()}
-              </div>
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {[
+                { label: "Avg Buy", val: selectedStock.averagePrice.toFixed(2) + " Au", color: "var(--accent-blue)" },
+                { label: "Current", val: selectedStock.currentPrice.toFixed(2) + " Au", color: "var(--accent-purple)" },
+                { label: "Invested", val: (selectedStock.shares * selectedStock.averagePrice).toFixed(2) + " Au", color: "var(--text)" },
+                { label: "P/L", val: (() => { const pl = (selectedStock.currentPrice - selectedStock.averagePrice) * selectedStock.shares; return (pl >= 0 ? "+" : "") + pl.toFixed(2) + " Au"; })(), color: (selectedStock.currentPrice - selectedStock.averagePrice) >= 0 ? "var(--accent-green)" : "var(--accent-red)" },
+              ].map((m, i) => (
+                <div key={i} className="p-3 rounded-xl" style={{ background: "var(--bg)" }}>
+                  <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{m.label}</div>
+                  <div className="text-lg font-bold" style={{ color: m.color }}>{m.val}</div>
+                </div>
+              ))}
             </div>
-
-            {/* Chart */}
-            <div className="h-48 bg-black/40 border border-gray-800 rounded-xl p-3 mb-6">
+            <div className="h-40 rounded-xl p-3 mb-5" style={{ background: "var(--bg)" }}>
               {chartData.length >= 2 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
-                    <XAxis dataKey="time" stroke="#4b5563" fontSize={10} />
-                    <YAxis stroke="#4b5563" fontSize={10} domain={['dataMin - 1', 'dataMax + 1']} />
-                    <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #374151', borderRadius: '8px', fontSize: 12 }} />
-                    <Area
-                      type="monotone"
-                      dataKey="price"
-                      stroke={chartData[chartData.length - 1].price >= chartData[0].price ? "#10b981" : "#ef4444"}
-                      fill={chartData[chartData.length - 1].price >= chartData[0].price ? "#10b981" : "#ef4444"}
-                      fillOpacity={0.12}
-                      strokeWidth={2}
-                    />
+                    <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={9} />
+                    <YAxis stroke="var(--text-muted)" fontSize={9} domain={["dataMin - 1", "dataMax + 1"]} />
+                    <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "10px", fontSize: 11 }} />
+                    <Area type="monotone" dataKey="price" stroke={chartData[chartData.length - 1].price >= chartData[0].price ? "var(--accent-green)" : "var(--accent-red)"} fill={chartData[chartData.length - 1].price >= chartData[0].price ? "var(--accent-green)" : "var(--accent-red)"} fillOpacity={0.1} strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">
-                  No price history available yet.
-                </div>
-              )}
+              ) : <div className="w-full h-full flex items-center justify-center text-sm" style={{ color: "var(--text-muted)" }}>No history</div>}
             </div>
-
             <div className="flex gap-3">
-              <button onClick={() => router.push(`/profile/${selectedStock.targetUserId}`)} className="flex-1 bg-gray-800 p-3 rounded-xl font-bold hover:bg-gray-700 transition text-sm">
-                View Profile
-              </button>
-              <button onClick={() => router.push(`/dashboard`)} className="flex-1 bg-purple-600 p-3 rounded-xl font-bold hover:bg-purple-500 transition text-sm">
-                Trade More
-              </button>
+              <button onClick={() => router.push(`/profile/${selectedStock.targetUserId}`)} className="btn-secondary flex-1">Profile</button>
+              <button onClick={() => router.push("/dashboard")} className="btn-primary flex-1">Trade</button>
             </div>
           </div>
         </div>

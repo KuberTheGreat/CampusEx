@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { jwtDecode } from "jwt-decode";
 
 export default function Home() {
-  const [step, setStep] = useState(0); // 0: Landing, 1: Auth, 2: Profile, 3: IPO, 4: Done
+  const [step, setStep] = useState(0);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [traits, setTraits] = useState("");
@@ -20,226 +20,138 @@ export default function Home() {
     if (credentialResponse.credential) {
       try {
         const res = await fetch("http://localhost:8080/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: credentialResponse.credential }),
         });
-
         const data = await res.json();
         if (res.ok) {
-          if (data.needs_profile === false && data.user) {
-            // Returning user, skip onboarding entirely
-            login(data.user);
-            router.push("/dashboard");
-          } else {
-            // New user, push to profile creation
-            setEmail(data.email || "");
-            setName(data.name || "");
-            setStep(2);
-          }
-        } else {
-          alert("Login failed: " + data.error);
-        }
-      } catch (err) {
-        console.error("Failed to verify token", err);
-      }
+          if (data.needs_profile === false && data.user) { login(data.user); router.push("/dashboard"); }
+          else { setEmail(data.email || ""); setName(data.name || ""); setStep(2); }
+        } else { alert("Login failed: " + data.error); }
+      } catch (err) { console.error("Failed to verify token", err); }
     }
   };
 
-  const handleGoogleLoginError = () => {
-    console.error("Google Login Failed");
-  };
+  const handleGoogleLoginError = () => console.error("Google Login Failed");
 
   const handleDevBypass = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/market/leaderboard");
       const data = await res.json();
-      if (res.ok && data.leaderboard && data.leaderboard.length > 0) {
-        // Pick the first user in the DB
-        const mockUser = data.leaderboard[0];
-        login(mockUser);
-        router.push("/dashboard");
-      } else {
-        alert("No users in DB to bypass with. Please create one securely first.");
-      }
-    } catch(e) {
-      console.error(e);
-      alert("Failed to bypass login");
-    }
+      if (res.ok && data.leaderboard?.length > 0) { login(data.leaderboard[0]); router.push("/dashboard"); }
+      else { alert("No users in DB."); }
+    } catch(e) { console.error(e); alert("Failed to bypass."); }
   };
 
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const traitList = traits.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+      const traitList = traits.split(",").map(t => t.trim()).filter(t => t.length > 0);
       const res = await fetch("http://localhost:8080/api/user/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, stockSymbol, traits: traitList }),
       });
-      if (res.ok) {
-        setStep(3);
-      } else {
-        const errorData = await res.json();
-        alert("Error saving profile: " + errorData.error);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      if (res.ok) setStep(3);
+      else { const d = await res.json(); alert("Error: " + d.error); }
+    } catch (err) { console.error(err); }
   };
 
   const handleScheduleIPO = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Backend expects ipoDate as time string, e.g. RFC3339
       const parsedDate = new Date(ipoDate).toISOString();
       const res = await fetch("http://localhost:8080/api/user/ipo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, ipoDate: parsedDate }),
       });
       const data = await res.json();
-      if (res.ok) {
-        // Save user context locally
-        login(data.user);
-        setStep(4);
-      } else {
-        alert("Error scheduling IPO: " + data.error);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      if (res.ok) { login(data.user); setStep(4); }
+      else { alert("Error scheduling IPO: " + data.error); }
+    } catch (err) { console.error(err); }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Animated gradient background mesh */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-60 animate-float" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-60 animate-float" style={{ animationDelay: '2s' }} />
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ background: "var(--bg)" }}>
+      {/* Decorative blobs */}
+      <div className="absolute top-[-15%] left-[-10%] w-[45%] h-[45%] rounded-full opacity-20 animate-float" style={{ background: "var(--primary)", filter: "blur(120px)" }} />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full opacity-15 animate-float" style={{ background: "var(--accent-purple)", filter: "blur(120px)", animationDelay: "2s" }} />
 
       <main className="z-10 w-full max-w-4xl p-8 flex flex-col items-center">
         {step === 0 && (
-          <div className="text-center space-y-8 animate-in fade-in zoom-in duration-700">
-            <h1 className="text-6xl font-extrabold tracking-tight mb-4">
-              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-emerald-400">CampusEx</span>
+          <div className="text-center space-y-6 animate-fade-in">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white text-3xl font-extrabold" style={{ background: "var(--primary)" }}>Cx</div>
+            <h1 className="text-5xl font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
+              Welcome to <span style={{ color: "var(--primary)" }}>CampusEx</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-secondary)" }}>
               Transform everyday college life into a dynamic virtual economy.
-              You aren't just a student—you are a tradable asset.
+              You aren't just a student — you are a tradable asset.
             </p>
-            <button
-              onClick={() => setStep(1)}
-              className="mt-8 px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full font-bold text-lg hover:scale-105 transition-transform animate-pulse-glow"
-            >
+            <button onClick={() => setStep(1)} className="btn-primary text-lg px-10 py-4 mt-4 animate-pulse-glow">
               Enter The Market
             </button>
           </div>
         )}
 
         {step === 1 && (
-          <div className="glass p-12 rounded-3xl w-full max-w-md text-center space-y-6">
-            <h2 className="text-3xl font-bold">Secure Access</h2>
-            <p className="text-gray-400">Verify your college identity to continue.</p>
-            <div className="flex flex-col items-center gap-4 mt-6">
-              <GoogleLogin
-                onSuccess={handleGoogleLoginSuccess}
-                onError={handleGoogleLoginError}
-                shape="rectangular"
-                size="large"
-                theme="outline"
-              />
-              <div className="text-gray-500 text-sm">OR</div>
-              <button 
-                onClick={handleDevBypass}
-                className="px-6 py-2 bg-gray-800 text-gray-300 rounded-lg font-bold hover:bg-gray-700 transition"
-              >
-                Local Dev Bypass (Auto Login)
-              </button>
+          <div className="card p-10 w-full max-w-md text-center space-y-6 animate-fade-in">
+            <h2 className="text-2xl font-extrabold" style={{ color: "var(--text)" }}>Secure Access</h2>
+            <p style={{ color: "var(--text-secondary)" }}>Verify your college identity to continue.</p>
+            <div className="flex flex-col items-center gap-4 pt-2">
+              <GoogleLogin onSuccess={handleGoogleLoginSuccess} onError={handleGoogleLoginError} shape="rectangular" size="large" theme="outline" />
+              <div className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>OR</div>
+              <button onClick={handleDevBypass} className="btn-secondary w-full">Dev Bypass (Auto Login)</button>
             </div>
           </div>
         )}
 
         {step === 2 && (
-          <form className="glass p-8 w-full max-w-lg rounded-3xl space-y-6" onSubmit={handleCreateProfile}>
-            <h2 className="text-3xl font-bold text-center">List Your Profile</h2>
+          <form className="card p-8 w-full max-w-lg space-y-5 animate-fade-in" onSubmit={handleCreateProfile}>
+            <h2 className="text-2xl font-extrabold text-center" style={{ color: "var(--text)" }}>List Your Profile</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
-                />
+                <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Name</label>
+                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input w-full" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Stock Symbol (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. KUB"
-                  value={stockSymbol}
-                  onChange={(e) => setStockSymbol(e.target.value.toUpperCase())}
-                  maxLength={4}
-                  className="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
-                />
+                <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Stock Symbol</label>
+                <input type="text" placeholder="e.g. KUB" value={stockSymbol} onChange={(e) => setStockSymbol(e.target.value.toUpperCase())} maxLength={4} className="input w-full" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Traits & Quirks (comma separated)</label>
-                <textarea
-                  placeholder="Coder, Gymbro, Overthinker..."
-                  value={traits}
-                  onChange={(e) => setTraits(e.target.value)}
-                  className="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500 min-h-[100px]"
-                ></textarea>
-                <p className="text-xs text-emerald-400 mt-1">* 50% of these will be randomly hidden to create mystery.</p>
+                <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Traits & Quirks (comma separated)</label>
+                <textarea placeholder="Coder, Gymbro, Overthinker..." value={traits} onChange={(e) => setTraits(e.target.value)} className="input w-full min-h-[100px] resize-none" />
+                <p className="text-xs mt-1" style={{ color: "var(--primary)" }}>* 50% of these will be randomly hidden to create mystery.</p>
               </div>
             </div>
-            <button type="submit" className="w-full bg-purple-600 p-3 rounded-lg font-bold hover:bg-purple-500 transition-colors">
-              Continue
-            </button>
+            <button type="submit" className="btn-primary w-full">Continue</button>
           </form>
         )}
 
         {step === 3 && (
-          <form className="glass p-8 w-full max-w-md rounded-3xl space-y-6" onSubmit={handleScheduleIPO}>
-            <h2 className="text-3xl font-bold text-center">Schedule IPO</h2>
-            <p className="text-center text-gray-400">Pick a date to officially launch on the market. Users can pre-order your stock until this date.</p>
+          <form className="card p-8 w-full max-w-md space-y-5 animate-fade-in" onSubmit={handleScheduleIPO}>
+            <h2 className="text-2xl font-extrabold text-center" style={{ color: "var(--text)" }}>Schedule IPO</h2>
+            <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>Pick a date to officially launch on the market.</p>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Launch Date</label>
-              <input
-                type="date"
-                required
-                value={ipoDate}
-                onChange={(e) => setIpoDate(e.target.value)}
-                className="w-full bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-500"
-              />
+              <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Launch Date</label>
+              <input type="date" required value={ipoDate} onChange={(e) => setIpoDate(e.target.value)} className="input w-full" />
             </div>
-            <button type="submit" className="w-full bg-emerald-600 p-3 rounded-lg font-bold hover:bg-emerald-500 transition-colors animate-pulse-glow">
-              Confirm & Launch
-            </button>
+            <button type="submit" className="btn-primary w-full animate-pulse-glow">Confirm & Launch</button>
           </form>
         )}
 
         {step === 4 && (
-          <div className="glass p-12 w-full max-w-md rounded-3xl text-center space-y-6 animate-in slide-in-from-bottom-5">
-            <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold">You are pre-listed!</h2>
-            <p className="text-gray-300">
-              Welcome to the market, <span className="font-bold text-purple-400">{name}</span>.<br />
+          <div className="card p-10 w-full max-w-md text-center space-y-5 animate-fade-in">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-white text-2xl" style={{ background: "var(--accent-green)" }}>✓</div>
+            <h2 className="text-2xl font-extrabold" style={{ color: "var(--text)" }}>You are pre-listed!</h2>
+            <p style={{ color: "var(--text-secondary)" }}>
+              Welcome, <span className="font-bold" style={{ color: "var(--primary)" }}>{name}</span>.<br />
               Your stock <b>${stockSymbol || "KUB"}</b> is now accepting pre-orders.
             </p>
-            <div className="bg-black/40 p-4 rounded-xl border border-gray-800 flex justify-between items-center text-sm">
-              <span className="text-gray-400">Initial Balance</span>
-              <span className="font-bold text-emerald-400">1000 AURA</span>
+            <div className="p-4 rounded-xl flex justify-between items-center text-sm" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+              <span style={{ color: "var(--text-secondary)" }}>Initial Balance</span>
+              <span className="font-bold" style={{ color: "var(--accent-green)" }}>1000 AURA</span>
             </div>
-            <button onClick={() => router.push("/dashboard")} className="w-full bg-gray-800 p-3 rounded-lg text-white hover:bg-gray-700 transition">
-              Go To Dashboard
-            </button>
+            <button onClick={() => router.push("/dashboard")} className="btn-secondary w-full">Go To Dashboard</button>
           </div>
         )}
       </main>

@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 type NewsItem = {
   id: number;
   publisher: { name: string; credibilityScore: number };
-  subject: { name: string; stockPrice: number };
+  subject: { name: string; stockPrice: number } | null;
   content: string;
   status: string;
   endsAt: string;
@@ -18,34 +18,19 @@ type NewsItem = {
 
 function Countdown({ endsAt }: { endsAt: string }) {
   const [timeLeft, setTimeLeft] = useState("");
-
   useEffect(() => {
-    const updateCountdown = () => {
-      const end = new Date(endsAt).getTime();
-      const now = new Date().getTime();
-      const diff = end - now;
-
-      if (diff <= 0) {
-        setTimeLeft("Evaluating");
-        return;
-      }
-
-      const h = Math.floor(diff / (1000 * 60 * 60));
-      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const s = Math.floor((diff % (1000 * 60)) / 1000);
-
-      if (h > 0) {
-        setTimeLeft(`${h}h ${m}m ${s}s`);
-      } else {
-        setTimeLeft(`${m}m ${s}s`);
-      }
+    const update = () => {
+      const diff = new Date(endsAt).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Evaluating"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`);
     };
-
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    return () => clearInterval(timer);
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
   }, [endsAt]);
-
   return <span>{timeLeft}</span>;
 }
 
@@ -54,155 +39,117 @@ export default function NewsPage() {
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNews();
-  }, []);
+  useEffect(() => { fetchNews(); }, []);
 
   const fetchNews = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/news");
-      if (res.ok) {
-        const data = await res.json();
-        setNewsList(data.news);
-      }
-    } catch (error) {
-      console.error("Failed to fetch news", error);
-    } finally {
-      setLoading(false);
-    }
+      if (res.ok) { const data = await res.json(); setNewsList(data.news); }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   const handleVote = async (newsId: number, isConfirmed: boolean) => {
     if (!user?.id) return toast.error("Please log in first.");
     try {
       const res = await fetch(`http://localhost:8080/api/news/${newsId}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, isConfirmed }),
       });
-      if (res.ok) {
-        toast.success("Vote recorded!");
-        fetchNews();
-      } else {
-        const errorData = await res.json();
-        toast.error("Error: " + errorData.error);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to submit vote");
-    }
+      if (res.ok) { toast.success("Vote recorded!"); fetchNews(); }
+      else { const d = await res.json(); toast.error("Error: " + d.error); }
+    } catch { toast.error("Failed to submit vote"); }
+  };
+
+  const statusStyle = (s: string) => {
+    if (s === "CONFIRMED") return { bg: "rgba(52,199,89,0.1)", color: "var(--accent-green)", border: "1px solid rgba(52,199,89,0.2)" };
+    if (s === "REJECTED") return { bg: "rgba(255,59,48,0.1)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.2)" };
+    return { bg: "var(--primary-soft)", color: "var(--primary)", border: "1px solid rgba(255,140,0,0.2)" };
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] p-6 md:p-12 relative overflow-hidden">
-      {/* Decorative background blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/20 rounded-full blur-[100px] pointer-events-none"></div>
-
-      <div className="max-w-4xl mx-auto relative z-10">
-        <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-4">
+    <div className="min-h-screen p-6 animate-fade-in" style={{ background: "var(--bg)" }}>
+      <div className="max-w-4xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight mb-2 bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent">
-              Campus News & Credibility
-            </h1>
-            <p className="text-gray-400 text-lg">Verify updates and shape the market.</p>
+            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Campus News</h1>
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Verify updates and shape the market.</p>
           </div>
-          
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 items-center">
             {user && (
-              <div className="flex items-center bg-white/5 px-4 py-2 rounded-xl border border-white/10 glass text-sm">
-                <span className="text-gray-400 mr-2">Logged in as:</span>
-                <span className="text-white font-medium">{user.name}</span>
+              <div className="card px-4 py-2 text-sm flex items-center gap-2">
+                <span style={{ color: "var(--text-secondary)" }}>Logged in as</span>
+                <span className="font-bold" style={{ color: "var(--text)" }}>{user.name}</span>
               </div>
             )}
-            <Link href="/news/create" className="px-6 py-3 bg-(--primary) hover:bg-(--primary-hover) text-white font-semibold rounded-xl transition-all shadow-lg animate-pulse-glow text-sm md:text-base">
-              Publish News
-            </Link>
+            <Link href="/news/create" className="btn-primary">Publish News</Link>
           </div>
         </header>
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+            <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--primary)", borderTopColor: "transparent" }} />
           </div>
         ) : newsList.length === 0 ? (
-          <div className="glass p-12 text-center rounded-2xl">
-            <p className="text-xl text-gray-400 mb-4">No campus news yet. Be the first to break a story!</p>
-            <Link href="/news/create" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors underline">
-              Create a news post
-            </Link>
+          <div className="card p-12 text-center">
+            <p className="text-lg mb-4" style={{ color: "var(--text-muted)" }}>No campus news yet. Be the first!</p>
+            <Link href="/news/create" className="btn-primary">Create Post</Link>
           </div>
         ) : (
-          <div className="grid gap-6">
-            {newsList.map((news) => (
-              <div key={news.id} className="glass p-6 md:p-8 rounded-2xl relative overflow-hidden group transition-all hover:bg-white/[0.08]">
-                
-                {/* Status Badge */}
-                <div className={`absolute top-0 right-0 px-4 py-1.5 flex items-center gap-2 text-xs font-bold tracking-wider uppercase rounded-bl-xl shadow-md ${
-                  news.status === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-400 border-b border-l border-emerald-500/30' :
-                  news.status === 'REJECTED' ? 'bg-red-500/20 text-red-400 border-b border-l border-red-500/30' :
-                  'bg-yellow-500/20 text-yellow-400 border-b border-l border-yellow-500/30'
-                }`}>
-                  {news.status}
-                  {news.status === 'PENDING' && (
-                    <span className="text-yellow-200/80 border-l border-yellow-500/40 pl-2 opacity-90 text-[10px] tracking-widest font-mono select-none">
-                      <Countdown endsAt={news.endsAt} />
-                    </span>
+          <div className="space-y-4">
+            {newsList.map((news) => {
+              const st = statusStyle(news.status);
+              return (
+                <div key={news.id} className="card p-6 relative">
+                  {/* Status badge */}
+                  <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold uppercase" style={{ background: st.bg, color: st.color, border: st.border }}>
+                    {news.status}
+                    {news.status === "PENDING" && <span className="ml-2 opacity-75 text-[10px]"><Countdown endsAt={news.endsAt} /></span>}
+                  </div>
+
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm" style={{ background: "var(--primary)" }}>
+                      {news.publisher?.name?.[0] || "?"}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm" style={{ color: "var(--text)" }}>
+                        {news.publisher?.name || "Unknown"}{" "}
+                        <span className="font-normal text-xs" style={{ color: "var(--accent-purple)" }}>Cred: {news.publisher?.credibilityScore}</span>
+                      </h3>
+                      {news.subject && <p className="text-xs" style={{ color: "var(--text-secondary)" }}>About <span className="font-medium" style={{ color: "var(--primary)" }}>{news.subject.name}</span></p>}
+                    </div>
+                  </div>
+
+                  <p className="text-base leading-relaxed mb-5 pl-[52px]" style={{ color: "var(--text)" }}>"{news.content}"</p>
+
+                  {news.status === "PENDING" && (
+                    <div className="pl-[52px] flex gap-3">
+                      <button onClick={() => handleVote(news.id, true)} className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all" style={{ background: "rgba(52,199,89,0.08)", color: "var(--accent-green)", border: "1px solid rgba(52,199,89,0.2)" }}>✓ Confirm</button>
+                      <button onClick={() => handleVote(news.id, false)} className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all" style={{ background: "rgba(255,59,48,0.08)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.2)" }}>✗ Deny</button>
+                    </div>
                   )}
-                </div>
 
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-emerald-500 flex items-center justify-center font-bold text-lg shadow-inner">
-                    {news.publisher?.name?.[0] || '?'}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{news.publisher?.name || 'Unknown User'} <span className="text-purple-400 text-sm font-normal">Credibility: {news.publisher?.credibilityScore}</span></h3>
-                    <p className="text-xs text-gray-400">Reporting on <span className="text-emerald-400 font-medium">{news.subject?.name || 'Unknown'}</span></p>
-                  </div>
-                </div>
-
-                <p className="text-lg leading-relaxed mb-6 pl-13 text-gray-200">
-                  "{news.content}"
-                </p>
-
-                {news.status === 'PENDING' && (
-                  <div className="pl-13 flex gap-3">
-                    <button 
-                      onClick={() => handleVote(news.id, true)}
-                      className="flex-1 py-3 px-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-emerald-500/50"
-                    >
-                      ✓ Can Confirm
-                    </button>
-                    <button 
-                      onClick={() => handleVote(news.id, false)}
-                      className="flex-1 py-3 px-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-medium transition-colors focus:ring-2 focus:ring-red-500/50"
-                    >
-                      ✗ Cannot Confirm
-                    </button>
-                  </div>
-                )}
-
-                {news.status === 'CONFIRMED' && news.finalImpactDir !== 'NEUTRAL' && (
-                  <div className="pl-13 mt-4">
-                    <div className="bg-emerald-900/40 border border-emerald-500/20 p-4 rounded-xl flex items-center gap-4">
-                      <div className="text-2xl">🤖</div>
+                  {news.status === "CONFIRMED" && news.finalImpactDir !== "NEUTRAL" && (
+                    <div className="pl-[52px] mt-3 p-4 rounded-xl flex items-center gap-3" style={{ background: "rgba(52,199,89,0.06)", border: "1px solid rgba(52,199,89,0.15)" }}>
+                      <span className="text-2xl">🤖</span>
                       <div>
-                        <h4 className="font-semibold text-emerald-400 text-sm">AI Market Impact Analysis</h4>
-                        <p className="text-sm mt-1">
-                          <span className="font-medium text-white">{news.subject?.name}</span>'s stock price {news.finalImpactDir === 'POSITIVE' ? 'surged' : 'dropped'} by <span className={`font-bold ${news.finalImpactDir === 'POSITIVE' ? 'text-emerald-400' : 'text-red-400'}`}>{news.finalImpactPct}%</span>.
+                        <h4 className="font-bold text-xs" style={{ color: "var(--accent-green)" }}>AI Market Impact</h4>
+                        <p className="text-sm mt-1" style={{ color: "var(--text)" }}>
+                          {news.subject && <><span className="font-bold">{news.subject.name}</span>'s price {news.finalImpactDir === "POSITIVE" ? "surged" : "dropped"} by </>}
+                          <span className="font-bold" style={{ color: news.finalImpactDir === "POSITIVE" ? "var(--accent-green)" : "var(--accent-red)" }}>{news.finalImpactPct}%</span>.
                         </p>
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                {news.status === 'REJECTED' && (
-                  <div className="pl-13 mt-4 text-sm text-red-400 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
-                    This news was rejected by the community. The publisher has incurred a credibility and stock penalty.
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+
+                  {news.status === "REJECTED" && (
+                    <div className="pl-[52px] mt-3 text-sm p-3 rounded-xl" style={{ background: "rgba(255,59,48,0.06)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.15)" }}>
+                      This news was rejected by the community.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

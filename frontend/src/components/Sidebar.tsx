@@ -2,83 +2,108 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const links = [
-    { name: "Market Hub", path: "/dashboard", icon: "📈" },
+    { name: "Market", path: "/dashboard", icon: "📈" },
     { name: "Portfolio", path: "/portfolio", icon: "💼" },
-    { name: "Global 3D Feed", path: "/3d-market", icon: "🌐" },
-    { name: "Event Bids", path: "/events", icon: "🏆" },
-    { name: "News Feed", path: "/news", icon: "📰" },
-    { name: "Publish Scoop", path: "/news/create", icon: "✍️" },
-    { name: "Power Shop", path: "/shop", icon: "⚡" },
+    { name: "3D View", path: "/3d-market", icon: "🌐" },
+    { name: "Events", path: "/events", icon: "🏆" },
+    { name: "News", path: "/news", icon: "📰" },
+    { name: "Publish", path: "/news/create", icon: "✍️" },
+    { name: "Shop", path: "/shop", icon: "⚡" },
   ];
 
   return (
-    <>
-      <div className="md:hidden p-4 fixed top-0 left-0 z-50">
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="glass p-2 px-3 rounded-lg text-white font-bold border border-white/20 hover:bg-white/10 transition"
-        >
-          {isOpen ? "✕" : "☰"}
-        </button>
+    <aside 
+      className="group/sidebar fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300 ease-in-out"
+      style={{
+        width: "68px",
+        backgroundColor: "var(--bg-card)",
+        borderRight: "1px solid var(--border)",
+        boxShadow: "2px 0 20px var(--shadow)",
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.width = "220px"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.width = "68px"; }}
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-5 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-white text-sm flex-shrink-0" style={{ background: "var(--primary)" }}>
+          Cx
+        </div>
+        <span className="font-extrabold text-lg whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300" style={{ color: "var(--text)" }}>
+          CampusEx
+        </span>
       </div>
 
-      {isOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Navigation */}
+      <nav className="flex-1 py-4 px-2 space-y-1 overflow-hidden">
+        {links.map((link) => {
+          const isActive = pathname === link.path;
+          return (
+            <Link
+              key={link.path}
+              href={link.path}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+              style={{
+                background: isActive ? "var(--primary-soft)" : "transparent",
+                color: isActive ? "var(--primary)" : "var(--text-secondary)",
+                fontWeight: isActive ? 700 : 500,
+              }}
+              onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            >
+              <span className="text-xl flex-shrink-0 w-7 text-center">{link.icon}</span>
+              <span className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 text-sm">
+                {link.name}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
 
-      <aside className={`
-        fixed top-0 left-0 h-full w-64 glass z-40 transition-transform duration-300 md:translate-x-0 border-r border-white/10 bg-black/40 backdrop-blur-lg
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
-        <div className="p-6 h-full flex flex-col relative z-10">
-          <div className="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-emerald-400 bg-clip-text text-transparent mb-12">
-            CampusEx
-          </div>
+      {/* Bottom section — Theme toggle + Profile */}
+      <div className="px-2 pb-4 space-y-2 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+          style={{ color: "var(--text-secondary)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+        >
+          <span className="text-xl flex-shrink-0 w-7 text-center">
+            {theme === "light" ? "🌙" : "☀️"}
+          </span>
+          <span className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 text-sm font-medium">
+            {theme === "light" ? "Dark Mode" : "Light Mode"}
+          </span>
+        </button>
 
-          <nav className="flex-1 space-y-3">
-            {links.map((link) => {
-              const isActive = pathname === link.path;
-              return (
-                <Link 
-                  key={link.path}
-                  href={link.path}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all ${
-                    isActive 
-                    ? "bg-gradient-to-r from-purple-500/20 to-emerald-500/20 text-white border border-purple-500/30 shadow-[0_0_15px_rgba(139,92,246,0.2)]" 
-                    : "text-gray-400 hover:bg-white/5 hover:text-white border border-transparent"
-                  }`}
-                >
-                  <span className="text-xl">{link.icon}</span>
-                  <span className="font-semibold">{link.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto pt-6 border-t border-white/10">
-            <div className="flex items-center gap-3 text-sm text-gray-400">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tl from-purple-500 to-emerald-500 flex items-center justify-center text-white font-bold shadow-inner">
-                U
-              </div>
-              <div>
-                <p className="font-medium text-white text-base">Your Portfolio</p>
-                <p className="text-xs text-emerald-400">Active Investor</p>
-              </div>
+        {/* Profile */}
+        {user && (
+          <Link
+            href={`/profile/${user.id}`}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          >
+            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-xs flex-shrink-0" style={{ background: "var(--primary)" }}>
+              {user.stockSymbol || user.name?.[0] || "U"}
             </div>
-          </div>
-        </div>
-      </aside>
-    </>
+            <div className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300">
+              <div className="text-sm font-bold" style={{ color: "var(--text)" }}>{user.name}</div>
+              <div className="text-[10px] font-semibold" style={{ color: "var(--primary)" }}>{user.stockSymbol}</div>
+            </div>
+          </Link>
+        )}
+      </div>
+    </aside>
   );
 }
