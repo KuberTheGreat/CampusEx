@@ -2,6 +2,7 @@ package services
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/CampusEx/backend/database"
@@ -28,8 +29,8 @@ func resolvePendingNews() {
 	}
 
 	for _, newsItem := range pendingNews {
-		err := database.DB.Transaction(func(tx *gorm.DB) error { // need to import gorm? Yes, actually better to just use database.DB or tx. Let's just pass tx.
-			return processNewsResolution(newsItem)
+		err := database.DB.Transaction(func(tx *gorm.DB) error {
+			return processNewsResolution(tx, newsItem)
 		})
 		if err != nil {
 			log.Printf("Failed to resolve news %d: %v\n", newsItem.ID, err)
@@ -37,73 +38,118 @@ func resolvePendingNews() {
 	}
 }
 
-func processNewsResolution(news models.News) error {
-	// Re-fetch to ensure we have the latest and associations
-	q := database.DB.Preload("Publisher")
-	if news.SubjectID != nil {
-		q = q.Preload("Subject")
-	}
-	if err := q.First(&news, news.ID).Error; err != nil {
+func processNewsResolution(tx *gorm.DB, news models.News) error {
+	// Re-fetch with associations inside the transaction for a consistent snapshot
+	if err := tx.Preload("Publisher").Preload("Impacts.Subject").First(&news, news.ID).Error; err != nil {
 		return err
 	}
 
 	var votes []models.Vote
-	if err := database.DB.Preload("User").Where("news_id = ?", news.ID).Find(&votes).Error; err != nil {
+	if err := tx.Preload("User").Where("news_id = ?", news.ID).Find(&votes).Error; err != nil {
 		return err
 	}
 
-	canConfirmWeight := 0
-	cannotConfirmWeight := 0
-
-	for _, vote := range votes {
-		if vote.IsConfirmed {
-			canConfirmWeight += vote.User.CredibilityScore
+	// Tally credibility-weighted votes
+	confirmWeight := 0
+	denyWeight := 0
+	for _, v := range votes {
+		if v.IsConfirmed {
+			confirmWeight += v.User.CredibilityScore
 		} else {
-			cannotConfirmWeight += vote.User.CredibilityScore
+			denyWeight += v.User.CredibilityScore
 		}
 	}
 
-	tx := database.DB // use transaction for db operations here
-	// Or we can just use normal DB methods since processNewsResolution could be inside a transaction if we pass the tx, but for simplicity let's just use database.DB or run everything in a transaction.
+	totalWeight := confirmWeight + denyWeight
+	if totalWeight == 0 {
+		news.Status = "REJECTED"
+		return tx.Save(&news).Error
+	}
 
-	if canConfirmWeight >= cannotConfirmWeight && (canConfirmWeight+cannotConfirmWeight) > 0 { // at least some votes needed, assuming equal means confirm for now
+	if confirmWeight >= denyWeight {
+		// ── CONFIRMED PATH ──────────────────────────────────────────────────────
 		news.Status = "CONFIRMED"
-
 		log.Printf("News %d confirmed. Calling AI...\n", news.ID)
+
 		aiResp, aiErr := AnalyzeNewsImpact(news.Content)
 		if aiErr != nil {
 			log.Println("AI Analysis failed:", aiErr)
-			// Decide to proceed or fail. We'll proceed with NEUTRAL
-			news.FinalImpactDir = "NEUTRAL"
-			news.FinalImpactPct = 0
-		} else {
-			log.Printf("AI Analysis result: %s %f%%\n", aiResp.ImpactDirection, aiResp.Percentage)
-			news.FinalImpactDir = aiResp.ImpactDirection
-			news.FinalImpactPct = aiResp.Percentage
-
-			// Apply impact to Subject (only if subject exists)
-			if news.SubjectID != nil && aiResp.Percentage > 0 && aiResp.ImpactDirection != "NEUTRAL" {
-				var subject models.User
-				if err := tx.First(&subject, *news.SubjectID).Error; err == nil {
-					modifier := 1.0 + (aiResp.Percentage / 100.0)
-					if aiResp.ImpactDirection == "NEGATIVE" {
-						modifier = 1.0 - (aiResp.Percentage / 100.0)
-					}
-					subject.CurrentPrice *= modifier
-					tx.Save(&subject)
-				}
-			}
+			aiResp = &AIImpactAnalysis{Evaluations: []AIEvaluation{}}
 		}
 
-		// Reward Publisher
+		log.Printf("[CRON] News %d confirmed — %d impacts to process, %d AI evaluations received\n",
+			news.ID, len(news.Impacts), len(aiResp.Evaluations))
+		for _, e := range aiResp.Evaluations {
+			log.Printf("  [AI eval] name=%q dir=%s pct=%.2f\n", e.Name, e.ImpactDirection, e.Percentage)
+		}
+
+		// ── Apply AI impact per subject ──────────────────────────────────────
+		for i, impactRow := range news.Impacts {
+			direction := "NEUTRAL"
+			percentage := 0.0
+
+			log.Printf("  [CRON] Impact[%d] subjectID=%d subjectName=%q",
+				i, impactRow.SubjectID, impactRow.Subject.Name)
+
+			// Word-overlap fuzzy match handles "Kuber" ↔ "Kuber Thakur" etc.
+			subjectWords := strings.Fields(strings.ToLower(impactRow.Subject.Name))
+			for _, eval := range aiResp.Evaluations {
+				// Strip @ prefix in case model echoes back "@Kuber" style names
+				cleanEvalName := strings.ReplaceAll(eval.Name, "@", "")
+				evalWords := strings.Fields(strings.ToLower(cleanEvalName))
+				overlap := wordOverlap(subjectWords, evalWords)
+				log.Printf("    match? subject=%v eval=%v overlap=%v", subjectWords, evalWords, overlap)
+				if overlap {
+					direction = eval.ImpactDirection
+					percentage = eval.Percentage
+					break
+				}
+			}
+
+			log.Printf("  [CRON] → resolved direction=%s pct=%.2f\n", direction, percentage)
+
+			news.Impacts[i].FinalImpactDir = direction
+			news.Impacts[i].FinalImpactPct = percentage
+			if err := tx.Save(&news.Impacts[i]).Error; err != nil {
+				log.Printf("  [CRON] ✗ failed to save impact row %d: %v\n", news.Impacts[i].ID, err)
+			} else {
+				log.Printf("  [CRON] ✓ impact row %d saved\n", news.Impacts[i].ID)
+			}
+
+			// Apply price change — only when there is a real, non-neutral impact
+			if percentage > 0 && direction != "NEUTRAL" {
+				modifier := 1.0 + (percentage / 100.0)
+				if direction == "NEGATIVE" {
+					modifier = 1.0 - (percentage / 100.0)
+				}
+				log.Printf("  [CRON] Applying modifier=%.4f to subjectID=%d\n", modifier, impactRow.SubjectID)
+
+				var subject models.User
+				if err := tx.First(&subject, impactRow.SubjectID).Error; err != nil {
+					log.Printf("  [CRON] ✗ could not fetch subject %d: %v\n", impactRow.SubjectID, err)
+					continue
+				}
+				oldPrice := subject.CurrentPrice
+				subject.CurrentPrice = roundToTwo(subject.CurrentPrice * modifier)
+				if err := tx.Save(&subject).Error; err != nil {
+					log.Printf("  [CRON] ✗ failed to update price for %s: %v\n", subject.Name, err)
+				} else {
+					log.Printf("  [CRON] ✓ %s price: %.2f → %.2f\n", subject.Name, oldPrice, subject.CurrentPrice)
+				}
+			} else {
+				log.Printf("  [CRON] No price change (direction=%s pct=%.2f)\n", direction, percentage)
+			}
+		} // END impact loop
+
+		// ── Reward publisher ─────────────────────────────────────────────────
 		var publisher models.User
 		if err := tx.First(&publisher, news.PublisherID).Error; err == nil {
 			publisher.CredibilityScore += 50
-			publisher.CurrentPrice *= 1.02 // 2% bump
+			publisher.CurrentPrice = roundToTwo(publisher.CurrentPrice * 1.02)
 			tx.Save(&publisher)
 		}
 
-		// Adjust Voters
+		// ── Reward/penalise voters ────────────────────────────────────────────
 		for _, vote := range votes {
 			if vote.IsConfirmed {
 				vote.User.CredibilityScore += 10
@@ -117,22 +163,26 @@ func processNewsResolution(news models.News) error {
 		}
 
 	} else {
+		// ── REJECTED PATH ────────────────────────────────────────────────────
 		news.Status = "REJECTED"
-		news.FinalImpactDir = "NEUTRAL"
-		news.FinalImpactPct = 0
+		log.Printf("News %d rejected.\n", news.ID)
 
-		// Penalize Publisher
+		for i := range news.Impacts {
+			news.Impacts[i].FinalImpactDir = "NEUTRAL"
+			news.Impacts[i].FinalImpactPct = 0
+			tx.Save(&news.Impacts[i])
+		}
+
 		var publisher models.User
 		if err := tx.First(&publisher, news.PublisherID).Error; err == nil {
 			publisher.CredibilityScore -= 50
 			if publisher.CredibilityScore < 0 {
 				publisher.CredibilityScore = 0
 			}
-			publisher.CurrentPrice *= 0.98 // 2% drop
+			publisher.CurrentPrice = roundToTwo(publisher.CurrentPrice * 0.98)
 			tx.Save(&publisher)
 		}
 
-		// Adjust Voters
 		for _, vote := range votes {
 			if !vote.IsConfirmed {
 				vote.User.CredibilityScore += 10
@@ -147,6 +197,27 @@ func processNewsResolution(news models.News) error {
 	}
 
 	return tx.Save(&news).Error
+}
+
+// wordOverlap returns true if any word in slice a appears in slice b.
+// Used for fuzzy name matching between AI output and DB subject names.
+func wordOverlap(a, b []string) bool {
+	set := make(map[string]struct{}, len(a))
+	for _, w := range a {
+		set[w] = struct{}{}
+	}
+	for _, w := range b {
+		if _, ok := set[w]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// roundToTwo rounds a float to 2 decimal places to avoid floating-point drift
+// in repeated price multiplications.
+func roundToTwo(v float64) float64 {
+	return float64(int(v*100+0.5)) / 100
 }
 
 func StartAuctionCronJob() {

@@ -7,6 +7,7 @@ import (
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func RegisterNewsRoutes(router *gin.RouterGroup) {
@@ -20,7 +21,7 @@ func RegisterNewsRoutes(router *gin.RouterGroup) {
 
 type CreateNewsInput struct {
 	PublisherID uint   `json:"publisherId" binding:"required"`
-	SubjectID   *uint  `json:"subjectId"` // Optional now
+	SubjectIDs  []uint `json:"subjectIds" binding:"required"`
 	Content     string `json:"content" binding:"required"`
 	EvidenceURL string `json:"evidenceUrl"`
 }
@@ -32,13 +33,23 @@ func createNews(c *gin.Context) {
 		return
 	}
 
+	if len(input.SubjectIDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least one subject must be tagged."})
+		return
+	}
+
 	news := models.News{
 		PublisherID: input.PublisherID,
-		SubjectID:   input.SubjectID,
 		Content:     input.Content,
 		EvidenceURL: input.EvidenceURL,
 		Status:      "PENDING",
 		EndsAt:      time.Now().Add(5 * time.Minute),
+	}
+
+	for _, sID := range input.SubjectIDs {
+		news.Impacts = append(news.Impacts, models.NewsImpact{
+			SubjectID: sID,
+		})
 	}
 
 	if err := database.DB.Create(&news).Error; err != nil {
@@ -47,11 +58,9 @@ func createNews(c *gin.Context) {
 	}
 
 	// Fetch related user details for a rich response
-	q := database.DB.Preload("Publisher")
-	if news.SubjectID != nil {
-		q = q.Preload("Subject")
-	}
-	q.First(&news, news.ID)
+	database.DB.Preload("Publisher").Preload("Impacts", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("Subject")
+	}).First(&news, news.ID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "News created successfully",
@@ -61,13 +70,14 @@ func createNews(c *gin.Context) {
 
 func getNews(c *gin.Context) {
 	var newsList []models.News
-	if err := database.DB.Preload("Publisher").Order("created_at desc").Find(&newsList).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch news"})
+	if err := database.DB.Preload("Publisher").Preload("Impacts", func(db *gorm.DB) *gorm.DB {
+		return db.Preload("Subject")
+	}).Order("created_at desc").Find(&newsList).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch news: " + err.Error()})
 		return
 	}
 	for i := range newsList {
-		newsList[i].Publisher.Name = "Anonymous Scholar" // Or whatever title you want
-		// The credibility score stays intact!
+		newsList[i].Publisher.Name = "Anonymous Scholar"
 	}
 
 	c.JSON(http.StatusOK, gin.H{"news": newsList})
