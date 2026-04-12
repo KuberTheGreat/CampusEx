@@ -14,11 +14,14 @@ func RegisterEventRoutes(router *gin.RouterGroup) {
 	events := router.Group("/events")
 	{
 		events.GET("/active", getActiveEvents)
+		events.GET("/all", getAllEvents)
 		events.POST("/bid", placeEventBid)
 	}
 
 	admin := router.Group("/admin/events")
 	{
+		admin.GET("/all", getAllEventsAdmin)
+		admin.GET("/:eventId/bids", getEventBids)
 		admin.POST("/", createEvent)
 		admin.POST("/:eventId/resolve", resolveEvent)
 	}
@@ -31,6 +34,34 @@ func getActiveEvents(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"events": events})
+}
+
+func getAllEvents(c *gin.Context) {
+	var events []models.Event
+	if err := database.DB.Preload("Participants.User").Order("created_at desc").Find(&events).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch events"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"events": events})
+}
+
+func getAllEventsAdmin(c *gin.Context) {
+	var events []models.Event
+	if err := database.DB.Preload("Participants.User").Order("created_at desc").Find(&events).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch events"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"events": events})
+}
+
+func getEventBids(c *gin.Context) {
+	eventId := c.Param("eventId")
+	var bids []models.EventBid
+	if err := database.DB.Preload("Bidder").Preload("Participant.User").Where("event_id = ?", eventId).Order("amount desc").Find(&bids).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bids"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"bids": bids})
 }
 
 type BidInput struct {

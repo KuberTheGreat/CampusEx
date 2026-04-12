@@ -23,6 +23,13 @@ export default function AdminDashboard() {
   const [engineInterval, setEngineInterval] = useState(60);
   const [newInterval, setNewInterval] = useState(60);
 
+  // Event Management States
+  const [events, setEvents] = useState<any[]>([]);
+  const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
+  const [eventBids, setEventBids] = useState<any[]>([]);
+  const [outcomeSelections, setOutcomeSelections] = useState<Record<number, string>>({});
+  const [resolvingEvent, setResolvingEvent] = useState<number | null>(null);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -34,6 +41,7 @@ export default function AdminDashboard() {
     fetchUsers();
     fetchEngineStatus();
     fetchShopItems();
+    fetchAllEvents();
   }, []);
 
   const fetchUsers = async () => {
@@ -195,6 +203,76 @@ export default function AdminDashboard() {
     } catch(e) { console.error(e); }
   }
 
+  // ===== Event Management =====
+  const fetchAllEvents = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/admin/events/all");
+      const data = await res.json();
+      if (res.ok) setEvents(data.events || []);
+    } catch(err) { console.error(err); }
+  };
+
+  const fetchEventBids = async (eventId: number) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/admin/events/${eventId}/bids`);
+      const data = await res.json();
+      if (res.ok) setEventBids(data.bids || []);
+    } catch(err) { console.error(err); }
+  };
+
+  const toggleExpandEvent = async (eventId: number) => {
+    if (expandedEvent === eventId) {
+      setExpandedEvent(null);
+      setEventBids([]);
+      return;
+    }
+    setExpandedEvent(eventId);
+    await fetchEventBids(eventId);
+  };
+
+  const setParticipantOutcome = (participantId: number, outcome: string) => {
+    setOutcomeSelections(prev => ({ ...prev, [participantId]: outcome }));
+  };
+
+  const resolveEvent = async (eventId: number, participants: any[]) => {
+    // Validate all participants have an outcome
+    const allSet = participants.every((p: any) => outcomeSelections[p.id] === "Won" || outcomeSelections[p.id] === "Lost");
+    if (!allSet) {
+      return alert("Please set the outcome (Won/Lost) for ALL participants before resolving.");
+    }
+
+    if (!confirm("Are you sure you want to resolve this event? This will distribute prizes and cannot be undone.")) return;
+
+    setResolvingEvent(eventId);
+    try {
+      const outcomes = participants.map((p: any) => ({
+        participantId: p.id,
+        outcome: outcomeSelections[p.id]
+      }));
+
+      const res = await fetch(`http://localhost:8080/api/admin/events/${eventId}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outcomes })
+      });
+
+      if (res.ok) {
+        alert("Event resolved! Prizes distributed successfully.");
+        setOutcomeSelections({});
+        setExpandedEvent(null);
+        fetchAllEvents();
+        fetchUsers(); // Refresh user balances
+      } else {
+        const err = await res.json();
+        alert("Resolution failed: " + err.error);
+      }
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setResolvingEvent(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-gray-300 p-8 font-mono">
       <header className="flex justify-between items-center mb-12 border-b border-red-900/30 pb-6">
@@ -288,6 +366,169 @@ export default function AdminDashboard() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* ===== EVENT MANAGEMENT SECTION ===== */}
+      <div className="mt-12 mb-12">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-black text-cyan-500 tracking-tighter">EVENT_ARENA.CONTROL</h2>
+          <div className="text-[10px] text-gray-600 font-mono">RESOLVE_OUTCOMES() · DISTRIBUTE_PRIZES()</div>
+        </div>
+
+        <div className="space-y-4">
+          {events.length === 0 ? (
+            <div className="bg-[#111] border border-gray-800 rounded-xl p-8 text-center text-gray-600">
+              No events found in the system.
+            </div>
+          ) : (
+            events.map((evt) => {
+              const isActive = evt.status === "Active";
+              const isResolved = evt.status === "Resolved";
+              const isExpanded = expandedEvent === evt.id;
+
+              return (
+                <div key={evt.id} className={`bg-[#111] border rounded-xl overflow-hidden transition-all ${
+                  isResolved ? "border-gray-800/50 opacity-70" : "border-cyan-900/40 hover:border-cyan-500/40"
+                }`}>
+                  {/* Event Header */}
+                  <div 
+                    className="p-5 flex items-center justify-between cursor-pointer hover:bg-white/5 transition"
+                    onClick={() => isActive && toggleExpandEvent(evt.id)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-3 h-3 rounded-full ${isActive ? "bg-emerald-500 animate-pulse" : "bg-gray-600"}`} />
+                      <div>
+                        <h3 className="font-bold text-gray-200">{evt.title}</h3>
+                        <p className="text-[10px] text-gray-500">{evt.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500">Participants</div>
+                        <div className="font-bold text-gray-300">{evt.participants?.length || 0}</div>
+                      </div>
+                      <span className={`px-3 py-1 rounded text-[10px] font-bold tracking-widest uppercase ${
+                        isActive ? "bg-emerald-900/40 text-emerald-400 border border-emerald-500/30" : 
+                        "bg-gray-900 text-gray-500 border border-gray-800"
+                      }`}>
+                        {evt.status}
+                      </span>
+                      {isActive && (
+                        <span className="text-gray-500 text-xs">{isExpanded ? "▲" : "▼"}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Expanded Panel — only for Active events */}
+                  {isExpanded && isActive && (
+                    <div className="border-t border-gray-800 bg-black/40 p-6 space-y-6">
+                      {/* Participants & Outcome Selection */}
+                      <div>
+                        <h4 className="text-[10px] text-cyan-400 tracking-widest uppercase mb-4 font-bold">Set Participant Outcomes</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {evt.participants?.map((p: any) => (
+                            <div key={p.id} className="bg-[#111] border border-gray-800 rounded-xl p-4">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-sm">
+                                  {p.user?.stockSymbol || "??"}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-sm text-gray-200">{p.user?.name || "Unknown"}</div>
+                                  <div className="text-[10px] text-gray-600">{p.user?.email}</div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => setParticipantOutcome(p.id, "Won")}
+                                  className={`flex-1 py-2 rounded-lg text-xs font-bold tracking-widest transition ${
+                                    outcomeSelections[p.id] === "Won" 
+                                      ? "bg-emerald-600 text-white border border-emerald-500" 
+                                      : "bg-black border border-gray-800 text-gray-500 hover:text-emerald-400 hover:border-emerald-800"
+                                  }`}
+                                >
+                                  ✓ WON
+                                </button>
+                                <button 
+                                  onClick={() => setParticipantOutcome(p.id, "Lost")}
+                                  className={`flex-1 py-2 rounded-lg text-xs font-bold tracking-widest transition ${
+                                    outcomeSelections[p.id] === "Lost" 
+                                      ? "bg-red-600 text-white border border-red-500" 
+                                      : "bg-black border border-gray-800 text-gray-500 hover:text-red-400 hover:border-red-800"
+                                  }`}
+                                >
+                                  ✕ LOST
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Bids Table */}
+                      {eventBids.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] text-cyan-400 tracking-widest uppercase mb-3 font-bold">Active Bids ({eventBids.length})</h4>
+                          <div className="bg-[#0a0a0a] border border-gray-900 rounded-xl overflow-hidden">
+                            <table className="w-full text-left text-sm">
+                              <thead className="text-[10px] uppercase tracking-widest text-gray-600 bg-black">
+                                <tr>
+                                  <th className="p-3">Bidder</th>
+                                  <th className="p-3">On</th>
+                                  <th className="p-3">Type</th>
+                                  <th className="p-3 text-right">Amount</th>
+                                  <th className="p-3 text-right">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {eventBids.map((bid: any) => (
+                                  <tr key={bid.id} className="border-t border-gray-900">
+                                    <td className="p-3 text-gray-300">{bid.bidder?.name || bid.bidderId}</td>
+                                    <td className="p-3 text-gray-500">{bid.participant?.user?.name || bid.participantId}</td>
+                                    <td className={`p-3 font-bold ${bid.bidType === "For" ? "text-emerald-400" : "text-red-400"}`}>
+                                      {bid.bidType}
+                                    </td>
+                                    <td className="p-3 text-right font-bold text-amber-500">{bid.amount?.toFixed(2)} Au</td>
+                                    <td className="p-3 text-right">
+                                      <span className="text-[10px] text-gray-500 font-bold tracking-widest">{bid.status}</span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Resolve Button */}
+                      <button
+                        onClick={() => resolveEvent(evt.id, evt.participants || [])}
+                        disabled={resolvingEvent === evt.id}
+                        className="w-full py-4 bg-cyan-900/40 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-900/60 hover:text-cyan-300 rounded-xl font-bold text-xs tracking-[0.2em] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resolvingEvent === evt.id ? "RESOLVING..." : "⚡ RESOLVE_EVENT & DISTRIBUTE_PRIZES"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Resolved summary */}
+                  {isResolved && (
+                    <div className="border-t border-gray-800 bg-black/20 px-5 py-3 flex items-center gap-4">
+                      <span className="text-[10px] text-gray-600 tracking-widest">OUTCOMES:</span>
+                      {evt.participants?.map((p: any) => (
+                        <span key={p.id} className={`text-xs font-bold px-2 py-1 rounded ${
+                          p.outcome === "Won" ? "bg-emerald-900/40 text-emerald-400" : 
+                          p.outcome === "Lost" ? "bg-red-900/40 text-red-400" : "bg-gray-900 text-gray-500"
+                        }`}>
+                          {p.user?.stockSymbol || "??"}: {p.outcome}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Shop Management Section */}
@@ -412,5 +653,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-

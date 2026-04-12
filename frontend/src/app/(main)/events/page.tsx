@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Clock, Users, ArrowUpRight, ArrowDownRight, AlertCircle } from "lucide-react";
+import { Clock, Users, ArrowUpRight, ArrowDownRight, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 export default function EventsBidding() {
   const { user } = useAuth();
@@ -12,12 +12,12 @@ export default function EventsBidding() {
   const [bidAmount, setBidAmount] = useState<number>(50);
 
   useEffect(() => {
-    fetchActiveEvents();
+    fetchAllEvents();
   }, []);
 
-  const fetchActiveEvents = async () => {
+  const fetchAllEvents = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/events/active");
+      const res = await fetch("http://localhost:8080/api/events/all");
       const data = await res.json();
       if (res.ok && data.events) {
         setEvents(data.events);
@@ -56,7 +56,6 @@ export default function EventsBidding() {
       });
       if (res.ok) {
         alert(`Successfully placed ${bidAmount} AURA bid ${bidMode} ${biddingParticipant.user?.name || 'Participant'}!`);
-        const { refreshUser } = await import("@/context/AuthContext").then(() => ({ refreshUser: true }));
         window.location.reload(); 
       } else {
         const error = await res.json();
@@ -66,6 +65,10 @@ export default function EventsBidding() {
       console.error(err);
     }
   };
+
+  // Separate active and resolved events
+  const activeEvents = events.filter(e => e.status === "Active");
+  const resolvedEvents = events.filter(e => e.status === "Resolved");
 
   return (
     <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
@@ -82,79 +85,148 @@ export default function EventsBidding() {
             <p className="text-gray-400">Place your stakes on ongoing campus events and grow your portfolio.</p>
           </div>
           <div className="glass p-3 rounded-xl flex items-center justify-between min-w-[150px]">
-             <span className="text-gray-400 text-sm">Tournaments Won</span>
-             <span className="font-bold text-white text-lg">0</span>
+             <span className="text-gray-400 text-sm mr-3">Your AURA</span>
+             <span className="font-bold text-emerald-400 text-lg">{user?.auraCoins !== undefined ? Number(user.auraCoins).toFixed(2) : "0.00"}</span>
           </div>
         </header>
 
-        <div className="space-y-8">
-          {events.length === 0 ? (
+        {/* Active Events */}
+        <div className="space-y-8 mb-12">
+          {activeEvents.length === 0 && resolvedEvents.length === 0 ? (
             <div className="glass p-12 rounded-2xl flex flex-col items-center justify-center text-gray-500 border border-dashed border-gray-700">
               <AlertCircle size={48} className="mb-4 opacity-50 text-emerald-500" />
-              <h2 className="text-xl font-bold mb-2">No Active Events</h2>
+              <h2 className="text-xl font-bold mb-2">No Events Available</h2>
               <p>Check back later when an admin creates a new tournament or event.</p>
             </div>
           ) : (
-            events.map((evt) => (
-              <div key={evt.id} className="glass p-6 md:p-8 rounded-3xl border border-white/10 hover:border-purple-500/30 transition-all duration-500 relative overflow-hidden group">
-                {/* Decoration highlight */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full mix-blend-overlay filter blur-[50px] opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
-
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-white/10 pb-6 relative z-10">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-2">{evt.title}</h2>
-                    <p className="text-gray-400 text-sm">{evt.description}</p>
-                  </div>
-                  <div className="mt-4 md:mt-0 glass px-4 py-2 rounded-xl flex items-center gap-2 text-emerald-400 border border-emerald-500/30">
-                    <Clock size={16} />
-                    <span className="text-sm font-bold">In Progress</span>
-                  </div>
+            <>
+              {activeEvents.length === 0 && (
+                <div className="glass p-8 rounded-2xl text-center text-gray-500 border border-dashed border-gray-700">
+                  <p className="text-lg">No active events right now. Check back soon!</p>
                 </div>
+              )}
+              {activeEvents.map((evt) => (
+                <div key={evt.id} className="glass p-6 md:p-8 rounded-3xl border border-white/10 hover:border-purple-500/30 transition-all duration-500 relative overflow-hidden group">
+                  {/* Decoration highlight */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full mix-blend-overlay filter blur-[50px] opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
 
-                <div className="relative z-10">
-                  <h3 className="text-gray-400 font-semibold mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Users size={16} /> Participants on the line
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {evt.participants?.map((participant: any) => (
-                      <div key={participant.id} className="bg-black/60 border border-gray-800 rounded-2xl p-5 hover:border-gray-600 transition">
-                        <div className="flex items-center gap-4 mb-5">
-                          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-lg shadow-inner">
-                            {participant.user?.stockSymbol || "UK"}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-white/10 pb-6 relative z-10">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white mb-2">{evt.title}</h2>
+                      <p className="text-gray-400 text-sm">{evt.description}</p>
+                    </div>
+                    <div className="mt-4 md:mt-0 glass px-4 py-2 rounded-xl flex items-center gap-2 text-emerald-400 border border-emerald-500/30">
+                      <Clock size={16} />
+                      <span className="text-sm font-bold">In Progress</span>
+                    </div>
+                  </div>
+
+                  <div className="relative z-10">
+                    <h3 className="text-gray-400 font-semibold mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
+                      <Users size={16} /> Participants on the line
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {evt.participants?.map((participant: any) => (
+                        <div key={participant.id} className="bg-black/60 border border-gray-800 rounded-2xl p-5 hover:border-gray-600 transition">
+                          <div className="flex items-center gap-4 mb-5">
+                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-lg shadow-inner">
+                              {participant.user?.stockSymbol || "UK"}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-lg">{participant.user?.name || "Unknown"}</h4>
+                              <p className="text-xs text-gray-500">Current Au: {participant.user?.currentPrice?.toFixed(2) || "0.00"}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-lg">{participant.user?.name || "Unknown UI"}</h4>
-                            <p className="text-xs text-gray-500">Current Au: {participant.user?.currentPrice?.toFixed(2) || "0.00"}</p>
+
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => openBidModal(evt, participant, "For")}
+                              className="flex-1 flex items-center justify-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/50 hover:border-emerald-500 text-emerald-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
+                            >
+                              <ArrowUpRight size={16} /> FOR
+                            </button>
+                            <button 
+                              onClick={() => openBidModal(evt, participant, "Against")}
+                              className="flex-1 flex items-center justify-center gap-1 bg-red-600/20 hover:bg-red-600 border border-red-500/50 hover:border-red-500 text-red-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
+                            >
+                              <ArrowDownRight size={16} /> AGAINST
+                            </button>
                           </div>
                         </div>
-
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => openBidModal(evt, participant, "For")}
-                            className="flex-1 flex items-center justify-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/50 hover:border-emerald-500 text-emerald-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
-                          >
-                            <ArrowUpRight size={16} /> FOR
-                          </button>
-                          <button 
-                            onClick={() => openBidModal(evt, participant, "Against")}
-                            className="flex-1 flex items-center justify-center gap-1 bg-red-600/20 hover:bg-red-600 border border-red-500/50 hover:border-red-500 text-red-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
-                          >
-                            <ArrowDownRight size={16} /> AGAINST
-                          </button>
+                      ))}
+                      {(!evt.participants || evt.participants.length === 0) && (
+                        <div className="col-span-full py-4 text-gray-500 text-sm italic">
+                          No participants are registered for this event yet.
                         </div>
-                      </div>
-                    ))}
-                    {(!evt.participants || evt.participants.length === 0) && (
-                      <div className="col-span-full py-4 text-gray-500 text-sm italic">
-                        No participants are registered for this event yet.
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </>
           )}
         </div>
+
+        {/* Resolved Events */}
+        {resolvedEvents.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-400 mb-6 flex items-center gap-3">
+              <CheckCircle2 size={24} className="text-gray-500" />
+              Completed Events
+            </h2>
+            <div className="space-y-4">
+              {resolvedEvents.map((evt) => (
+                <div key={evt.id} className="glass p-6 rounded-2xl border border-gray-800/50 opacity-80">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-300">{evt.title}</h3>
+                      <p className="text-gray-500 text-sm">{evt.description}</p>
+                    </div>
+                    <div className="mt-3 md:mt-0 px-4 py-2 rounded-xl flex items-center gap-2 text-gray-500 border border-gray-700 bg-gray-900/50">
+                      <CheckCircle2 size={16} />
+                      <span className="text-sm font-bold">Ended</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-800 pt-4">
+                    <h4 className="text-xs text-gray-500 uppercase tracking-wider mb-3 font-semibold">Results</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {evt.participants?.map((p: any) => (
+                        <div key={p.id} className={`flex items-center gap-3 p-3 rounded-xl border ${
+                          p.outcome === "Won" 
+                            ? "bg-emerald-900/20 border-emerald-500/30" 
+                            : "bg-red-900/20 border-red-500/30"
+                        }`}>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                            p.outcome === "Won" 
+                              ? "bg-emerald-500/30 text-emerald-400" 
+                              : "bg-red-500/30 text-red-400"
+                          }`}>
+                            {p.user?.stockSymbol || "??"}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-bold text-sm">{p.user?.name || "Unknown"}</div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {p.outcome === "Won" ? (
+                              <span className="flex items-center gap-1 text-emerald-400 font-bold text-sm">
+                                <CheckCircle2 size={16} /> WON
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-red-400 font-bold text-sm">
+                                <XCircle size={16} /> LOST
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Bidding Modal */}
@@ -187,7 +259,7 @@ export default function EventsBidding() {
               </div>
               <div className="flex justify-between items-center mt-4">
                 <span className="text-sm text-gray-500">Your Balance:</span>
-                <span className={`font-bold ${user && user.auraCoins && user.auraCoins < bidAmount ? "text-red-500" : "text-emerald-400"}`}>
+                <span className={`font-bold ${user && user.auraCoins != null && user.auraCoins < bidAmount ? "text-red-500" : "text-emerald-400"}`}>
                   {user?.auraCoins !== undefined ? Number(user.auraCoins).toFixed(2) : "0.00"} Au
                 </span>
               </div>
