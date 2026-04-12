@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
@@ -29,6 +31,9 @@ export default function AdminDashboard() {
   const [eventBids, setEventBids] = useState<any[]>([]);
   const [outcomeSelections, setOutcomeSelections] = useState<Record<number, string>>({});
   const [resolvingEvent, setResolvingEvent] = useState<number | null>(null);
+  const [savingUser, setSavingUser] = useState(false);
+  const [savingPerk, setSavingPerk] = useState(false);
+  const [updatingEngine, setUpdatingEngine] = useState(false);
 
   const router = useRouter();
 
@@ -68,6 +73,7 @@ export default function AdminDashboard() {
   };
 
   const updateEngineInterval = async () => {
+    setUpdatingEngine(true);
     try {
       const res = await fetch("http://localhost:8080/api/admin/price-engine/interval", {
         method: "POST",
@@ -75,13 +81,16 @@ export default function AdminDashboard() {
         body: JSON.stringify({ seconds: Number(newInterval) })
       });
       if (res.ok) {
-        alert(`Price engine interval updated to ${newInterval}s`);
+        toast.success(`Price engine interval updated to ${newInterval}s`);
         setEngineInterval(newInterval);
       } else {
-        alert("Failed to update interval");
+        toast.error("Failed to update interval");
       }
     } catch(err) {
       console.error(err);
+      toast.error("Network error");
+    } finally {
+      setUpdatingEngine(false);
     }
   };
 
@@ -91,13 +100,14 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`http://localhost:8080/api/admin/user/${id}/ban`, { method: "DELETE" });
       if (res.ok) {
-        alert("Target successfully banned.");
+        toast.success("Target successfully banned.");
         fetchUsers();
       } else {
-        alert("Ban Failed");
+        toast.error("Ban Failed");
       }
     } catch(err) {
       console.error(err);
+      toast.error("Network error");
     }
   };
 
@@ -109,6 +119,7 @@ export default function AdminDashboard() {
   };
 
   const saveEdits = async () => {
+    setSavingUser(true);
     try {
       const res = await fetch(`http://localhost:8080/api/admin/user/${selectedUser.id}/update`, {
         method: "POST",
@@ -120,15 +131,18 @@ export default function AdminDashboard() {
         })
       });
       if (res.ok) {
-        alert("Overwritten successfully!");
+        toast.success("Overwritten successfully!");
         setSelectedUser(null);
         fetchUsers();
       } else {
         const d = await res.json();
-        alert("Update failed: " + d.error);
+        toast.error("Update failed: " + d.error);
       }
     } catch(e) {
       console.error(e);
+      toast.error("Network error");
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -143,11 +157,12 @@ export default function AdminDashboard() {
   const createPerk = async () => {
     const adminData = localStorage.getItem("campusex_admin");
     if (!adminData) {
-        alert("Session Expired: Please log in again at /admin");
+        toast.error("Session Expired: Please log in again at /admin");
         return;
     }
     const admin = JSON.parse(adminData);
     
+    setSavingPerk(true);
     try {
       const res = await fetch("http://localhost:8080/api/admin/shop/items", {
         method: "POST",
@@ -159,17 +174,19 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert("Perk materialised!");
+        toast.success("Perk materialised!");
         setNewPerk({ name: "", description: "", price: 0, rarity: "Common", requiredScore: 0, effectType: "", imageUrl: "🔮" });
         fetchShopItems();
       }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error(e); } finally {
+      setSavingPerk(false);
+    }
   };
 
   const deletePerk = async (id: number) => {
     if (!confirm("Terminate this perk permanently?")) return;
     const adminData = localStorage.getItem("campusex_admin");
-    if (!adminData) return alert("Unauthorized: Please login at /admin");
+    if (!adminData) return toast.error("Unauthorized: Please login at /admin");
     const admin = JSON.parse(adminData);
 
     try {
@@ -177,15 +194,17 @@ export default function AdminDashboard() {
           method: "DELETE",
           headers: { "X-Admin-Email": admin.email || "" }
       });
+      toast.success("Perk terminated.");
       fetchShopItems();
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error(e); toast.error("Network error"); }
   };
 
   const savePerkEdits = async () => {
     const adminData = localStorage.getItem("campusex_admin");
-    if (!adminData) return alert("Unauthorized: Please login at /admin");
+    if (!adminData) return toast.error("Unauthorized: Please login at /admin");
     const admin = JSON.parse(adminData);
 
+    setSavingPerk(true);
     try {
         const res = await fetch(`http://localhost:8080/api/admin/shop/item/${selectedPerk.id}`, {
             method: "PUT",
@@ -197,10 +216,13 @@ export default function AdminDashboard() {
         });
 
         if (res.ok) {
+            toast.success("Perk updated.");
             setSelectedPerk(null);
             fetchShopItems();
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error(e); toast.error("Network error"); } finally {
+      setSavingPerk(false);
+    }
   }
 
   // ===== Event Management =====
@@ -238,7 +260,7 @@ export default function AdminDashboard() {
     // Validate all participants have an outcome
     const allSet = participants.every((p: any) => outcomeSelections[p.id] === "Won" || outcomeSelections[p.id] === "Lost");
     if (!allSet) {
-      return alert("Please set the outcome (Won/Lost) for ALL participants before resolving.");
+      return toast.error("Please set the outcome (Won/Lost) for ALL participants before resolving.");
     }
 
     if (!confirm("Are you sure you want to resolve this event? This will distribute prizes and cannot be undone.")) return;
@@ -257,17 +279,18 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert("Event resolved! Prizes distributed successfully.");
+        toast.success("Event resolved! Prizes distributed successfully.", { duration: 5000 });
         setOutcomeSelections({});
         setExpandedEvent(null);
         fetchAllEvents();
-        fetchUsers(); // Refresh user balances
+        fetchUsers();
       } else {
         const err = await res.json();
-        alert("Resolution failed: " + err.error);
+        toast.error("Resolution failed: " + err.error);
       }
     } catch(e) {
       console.error(e);
+      toast.error("Network error");
     } finally {
       setResolvingEvent(null);
     }
@@ -303,10 +326,10 @@ export default function AdminDashboard() {
             <span className="text-xs text-gray-500">seconds</span>
             <button 
               onClick={updateEngineInterval} 
-              disabled={newInterval === engineInterval}
-              className="px-4 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-400 hover:bg-amber-900/50 rounded font-bold text-xs tracking-widest transition disabled:opacity-30 disabled:cursor-not-allowed"
+              disabled={newInterval === engineInterval || updatingEngine}
+              className="px-4 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-400 hover:bg-amber-900/50 rounded font-bold text-xs tracking-widest transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              APPLY
+              {updatingEngine ? <><Loader2 size={14} className="animate-spin" /> APPLYING...</> : "APPLY"}
             </button>
           </div>
         </div>
@@ -503,9 +526,9 @@ export default function AdminDashboard() {
                       <button
                         onClick={() => resolveEvent(evt.id, evt.participants || [])}
                         disabled={resolvingEvent === evt.id}
-                        className="w-full py-4 bg-cyan-900/40 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-900/60 hover:text-cyan-300 rounded-xl font-bold text-xs tracking-[0.2em] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-4 bg-cyan-900/40 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-900/60 hover:text-cyan-300 rounded-xl font-bold text-xs tracking-[0.2em] transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
-                        {resolvingEvent === evt.id ? "RESOLVING..." : "⚡ RESOLVE_EVENT & DISTRIBUTE_PRIZES"}
+                        {resolvingEvent === evt.id ? <><Loader2 size={16} className="animate-spin" /> RESOLVING...</> : "⚡ RESOLVE_EVENT & DISTRIBUTE_PRIZES"}
                       </button>
                     </div>
                   )}
@@ -548,7 +571,9 @@ export default function AdminDashboard() {
                     <input type="number" placeholder="Price" value={newPerk.price} onChange={e => setNewPerk({...newPerk, price: Number(e.target.value)})} className="bg-black border border-gray-800 p-2 text-sm rounded focus:border-purple-500 outline-none" />
                     <input type="text" placeholder="Effect (SHIELD...)" value={newPerk.effectType} onChange={e => setNewPerk({...newPerk, effectType: e.target.value})} className="bg-black border border-gray-800 p-2 text-sm rounded focus:border-purple-500 outline-none" />
                 </div>
-                <button onClick={createPerk} className="w-full py-3 bg-purple-900/40 border border-purple-500 text-purple-400 font-bold text-xs tracking-widest hover:bg-purple-900/60 transition rounded">CONSTRUCT_PERK</button>
+                <button onClick={createPerk} disabled={savingPerk} className="w-full py-3 bg-purple-900/40 border border-purple-500 text-purple-400 font-bold text-xs tracking-widest hover:bg-purple-900/60 transition rounded flex items-center justify-center gap-2 disabled:opacity-50">
+                  {savingPerk ? <><Loader2 size={14} className="animate-spin" /> CONSTRUCTING...</> : "CONSTRUCT_PERK"}
+                </button>
             </div>
 
             {/* List Existing Perks */}
@@ -605,8 +630,10 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex gap-3 mt-8">
-              <button onClick={() => setSelectedUser(null)} className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm font-bold">CANCEL</button>
-              <button onClick={saveEdits} className="flex-1 py-2 bg-red-900/80 hover:bg-red-800 text-white rounded text-sm tracking-widest font-bold">INJECT</button>
+              <button onClick={() => setSelectedUser(null)} disabled={savingUser} className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm font-bold disabled:opacity-50">CANCEL</button>
+              <button onClick={saveEdits} disabled={savingUser} className="flex-1 py-2 bg-red-900/80 hover:bg-red-800 text-white rounded text-sm tracking-widest font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                {savingUser ? <><Loader2 size={14} className="animate-spin" /> INJECTING...</> : "INJECT"}
+              </button>
             </div>
           </div>
         </div>
@@ -644,8 +671,10 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex gap-3 mt-8">
-              <button onClick={() => setSelectedPerk(null)} className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 rounded text-[10px] font-bold tracking-widest">ABORT</button>
-              <button onClick={savePerkEdits} className="flex-1 py-3 bg-purple-900/80 hover:bg-purple-800 text-white rounded text-[10px] tracking-[0.2em] font-black underline decoration-purple-400 underline-offset-4">EXECUTE_PATCH</button>
+              <button onClick={() => setSelectedPerk(null)} disabled={savingPerk} className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 rounded text-[10px] font-bold tracking-widest disabled:opacity-50">ABORT</button>
+              <button onClick={savePerkEdits} disabled={savingPerk} className="flex-1 py-3 bg-purple-900/80 hover:bg-purple-800 text-white rounded text-[10px] tracking-[0.2em] font-black underline decoration-purple-400 underline-offset-4 flex items-center justify-center gap-2 disabled:opacity-50">
+                {savingPerk ? <><Loader2 size={12} className="animate-spin" /> PATCHING...</> : "EXECUTE_PATCH"}
+              </button>
             </div>
           </div>
         </div>

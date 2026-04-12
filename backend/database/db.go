@@ -37,7 +37,7 @@ func ConnectDB() {
 		},
 	)
 
-	// Disable prepared statements — critical for Neon's PgBouncer pooler
+	// Disable prepared statements — critical for Supabase/Neon PgBouncer pooler
 	// which runs in transaction mode and doesn't support them
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  dsn,
@@ -73,7 +73,7 @@ func ConnectDB() {
 	// Conditional migration: only run AutoMigrate if schema is missing
 	// This saves ~13 round-trips on every restart when tables already exist
 	var tableExists bool
-	db.Raw("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users')").Scan(&tableExists)
+	db.Raw("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users')").Scan(&tableExists)
 
 	if !tableExists {
 		log.Println("Schema not found — running full migration...")

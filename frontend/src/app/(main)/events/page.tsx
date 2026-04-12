@@ -2,18 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Clock, Users, ArrowUpRight, ArrowDownRight, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, Users, ArrowUpRight, ArrowDownRight, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function EventsBidding() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [events, setEvents] = useState<any[]>([]);
   const [biddingParticipant, setBiddingParticipant] = useState<any>(null);
   const [bidMode, setBidMode] = useState<"For" | "Against" | null>(null);
   const [bidAmount, setBidAmount] = useState<number>(50);
+  const [placingBid, setPlacingBid] = useState(false);
+  // Map of "eventId-participantId" => bidType for bids this user already placed
+  const [userBids, setUserBids] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchAllEvents();
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserBids();
+    }
+  }, [user?.id]);
 
   const fetchAllEvents = async () => {
     try {
@@ -27,8 +37,29 @@ export default function EventsBidding() {
     }
   };
 
+  const fetchUserBids = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/events/user-bids/${user.id}`);
+      const data = await res.json();
+      if (res.ok && data.bids) {
+        const map: Record<string, string> = {};
+        for (const bid of data.bids) {
+          map[`${bid.eventId}-${bid.participantId}`] = bid.bidType;
+        }
+        setUserBids(map);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const hasUserBid = (eventId: number, participantId: number) => {
+    return userBids[`${eventId}-${participantId}`] || null;
+  };
+
   const openBidModal = (event: any, participant: any, mode: "For" | "Against") => {
-    if (!user?.id) return alert("Please log in to place bids on events!");
+    if (!user?.id) return toast.error("Please log in to place bids on events!");
     setBiddingParticipant({ ...participant, eventId: event.id, eventTitle: event.title });
     setBidMode(mode);
     setBidAmount(50);
@@ -37,11 +68,12 @@ export default function EventsBidding() {
   const executeBid = async () => {
     if (!user?.id || !biddingParticipant || !bidMode) return;
     
-    if (bidAmount <= 0) return alert("Bid amount must be greater than 0");
+    if (bidAmount <= 0) return toast.error("Bid amount must be greater than 0");
     if (bidAmount > (user.auraCoins || 0)) {
-       return alert("Insufficient AURA balance!");
+       return toast.error("Insufficient AURA balance!");
     }
 
+    setPlacingBid(true);
     try {
       const res = await fetch("http://localhost:8080/api/events/bid", {
         method: "POST",
@@ -55,14 +87,19 @@ export default function EventsBidding() {
         })
       });
       if (res.ok) {
-        alert(`Successfully placed ${bidAmount} AURA bid ${bidMode} ${biddingParticipant.user?.name || 'Participant'}!`);
-        window.location.reload(); 
+        toast.success(`Placed ${bidAmount} Au ${bidMode} ${biddingParticipant.user?.name || 'Participant'}!`, { duration: 4000 });
+        setBiddingParticipant(null);
+        await refreshUser();
+        await fetchUserBids();
       } else {
         const error = await res.json();
-        alert(`Bid Failed: ${error.error}`);
+        toast.error(error.error || "Bid failed");
       }
     } catch(err) {
       console.error(err);
+      toast.error("Network error. Please try again.");
+    } finally {
+      setPlacingBid(false);
     }
   };
 
@@ -107,7 +144,6 @@ export default function EventsBidding() {
               )}
               {activeEvents.map((evt) => (
                 <div key={evt.id} className="glass p-6 md:p-8 rounded-3xl border border-white/10 hover:border-purple-500/30 transition-all duration-500 relative overflow-hidden group">
-                  {/* Decoration highlight */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500 rounded-full mix-blend-overlay filter blur-[50px] opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
 
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-white/10 pb-6 relative z-10">
@@ -126,34 +162,48 @@ export default function EventsBidding() {
                       <Users size={16} /> Participants on the line
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {evt.participants?.map((participant: any) => (
-                        <div key={participant.id} className="bg-black/60 border border-gray-800 rounded-2xl p-5 hover:border-gray-600 transition">
-                          <div className="flex items-center gap-4 mb-5">
-                            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-lg shadow-inner">
-                              {participant.user?.stockSymbol || "UK"}
+                      {evt.participants?.map((participant: any) => {
+                        const existingBid = hasUserBid(evt.id, participant.id);
+                        return (
+                          <div key={participant.id} className="bg-black/60 border border-gray-800 rounded-2xl p-5 hover:border-gray-600 transition">
+                            <div className="flex items-center gap-4 mb-5">
+                              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-lg shadow-inner">
+                                {participant.user?.stockSymbol || "UK"}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-lg">{participant.user?.name || "Unknown"}</h4>
+                                <p className="text-xs text-gray-500">Current Au: {participant.user?.currentPrice?.toFixed(2) || "0.00"}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-bold text-lg">{participant.user?.name || "Unknown"}</h4>
-                              <p className="text-xs text-gray-500">Current Au: {participant.user?.currentPrice?.toFixed(2) || "0.00"}</p>
-                            </div>
-                          </div>
 
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => openBidModal(evt, participant, "For")}
-                              className="flex-1 flex items-center justify-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/50 hover:border-emerald-500 text-emerald-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
-                            >
-                              <ArrowUpRight size={16} /> FOR
-                            </button>
-                            <button 
-                              onClick={() => openBidModal(evt, participant, "Against")}
-                              className="flex-1 flex items-center justify-center gap-1 bg-red-600/20 hover:bg-red-600 border border-red-500/50 hover:border-red-500 text-red-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
-                            >
-                              <ArrowDownRight size={16} /> AGAINST
-                            </button>
+                            {existingBid ? (
+                              <div className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm border ${
+                                existingBid === "For" 
+                                  ? "bg-emerald-900/30 border-emerald-500/40 text-emerald-400" 
+                                  : "bg-red-900/30 border-red-500/40 text-red-400"
+                              }`}>
+                                <CheckCircle2 size={16} />
+                                Bid Placed · {existingBid.toUpperCase()}
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => openBidModal(evt, participant, "For")}
+                                  className="flex-1 flex items-center justify-center gap-1 bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/50 hover:border-emerald-500 text-emerald-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
+                                >
+                                  <ArrowUpRight size={16} /> FOR
+                                </button>
+                                <button 
+                                  onClick={() => openBidModal(evt, participant, "Against")}
+                                  className="flex-1 flex items-center justify-center gap-1 bg-red-600/20 hover:bg-red-600 border border-red-500/50 hover:border-red-500 text-red-400 hover:text-white py-2 rounded-xl font-bold text-sm transition-all"
+                                >
+                                  <ArrowDownRight size={16} /> AGAINST
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {(!evt.participants || evt.participants.length === 0) && (
                         <div className="col-span-full py-4 text-gray-500 text-sm italic">
                           No participants are registered for this event yet.
@@ -231,9 +281,9 @@ export default function EventsBidding() {
 
       {/* Bidding Modal */}
       {biddingParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setBiddingParticipant(null)}>
-          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-md w-full relative animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setBiddingParticipant(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => !placingBid && setBiddingParticipant(null)}>
+          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-md w-full relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => !placingBid && setBiddingParticipant(null)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition">
               ✕
             </button>
             
@@ -254,6 +304,7 @@ export default function EventsBidding() {
                   value={bidAmount} 
                   onChange={(e) => setBidAmount(Math.max(1, parseInt(e.target.value) || 1))} 
                   className="w-full bg-black border border-gray-700 focus:border-purple-500 rounded-xl p-4 text-2xl font-bold outline-none transition"
+                  disabled={placingBid}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">Au</div>
               </div>
@@ -267,14 +318,22 @@ export default function EventsBidding() {
 
             <button 
               onClick={executeBid} 
-              disabled={Boolean(user && user.auraCoins != null && user.auraCoins < bidAmount)} 
+              disabled={placingBid || Boolean(user && user.auraCoins != null && user.auraCoins < bidAmount)} 
               className={`w-full p-4 rounded-xl font-bold transition flex items-center justify-center gap-2
-                ${(user && user.auraCoins != null && user.auraCoins < bidAmount) ? "bg-gray-800 text-gray-500 cursor-not-allowed" : 
+                ${placingBid ? "bg-gray-800 text-gray-400 cursor-wait" :
+                (user && user.auraCoins != null && user.auraCoins < bidAmount) ? "bg-gray-800 text-gray-500 cursor-not-allowed" : 
                 bidMode === "For" ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse-glow" : 
                 "bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)]"
               }`}
             >
-              Confirm Wager
+              {placingBid ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Placing Wager...
+                </>
+              ) : (
+                "Confirm Wager"
+              )}
             </button>
           </div>
         </div>

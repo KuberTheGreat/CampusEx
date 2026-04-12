@@ -15,6 +15,7 @@ func RegisterEventRoutes(router *gin.RouterGroup) {
 	{
 		events.GET("/active", getActiveEvents)
 		events.GET("/all", getAllEvents)
+		events.GET("/user-bids/:userId", getUserEventBids)
 		events.POST("/bid", placeEventBid)
 	}
 
@@ -59,6 +60,16 @@ func getEventBids(c *gin.Context) {
 	var bids []models.EventBid
 	if err := database.DB.Preload("Bidder").Preload("Participant.User").Where("event_id = ?", eventId).Order("amount desc").Find(&bids).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bids"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"bids": bids})
+}
+
+func getUserEventBids(c *gin.Context) {
+	userId := c.Param("userId")
+	var bids []models.EventBid
+	if err := database.DB.Where("bidder_id = ?", userId).Find(&bids).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user bids"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"bids": bids})
