@@ -38,29 +38,29 @@ export default function MatchesDashboard() {
   const pastMatches = matches.filter(m => m.status === 'ENDED');
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
+    <div className="min-h-screen p-6 relative overflow-hidden bg-[var(--bg)] text-[var(--text)]">
       {/* Background aesthetics */}
-      <div className="fixed top-[0%] left-[-10%] w-[40%] h-[40%] bg-pink-900 rounded-full mix-blend-multiply blur-[150px] opacity-20" />
-      <div className="fixed bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-red-900 rounded-full mix-blend-multiply blur-[150px] opacity-20" />
+      <div className="fixed top-[0%] left-[-10%] w-[40%] h-[40%] rounded-full mix-blend-multiply blur-[150px] opacity-20" style={{ background: "var(--primary)" }} />
+      <div className="fixed bottom-[10%] right-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply blur-[150px] opacity-20" style={{ background: "var(--primary-soft)" }} />
 
       <div className="max-w-5xl mx-auto z-10 relative">
         <header className="mb-10">
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-red-500 mb-3 flex items-center gap-3">
-            <Heart className="text-pink-500 fill-pink-500" strokeWidth={0} size={40} />
+          <h1 className="text-5xl font-extrabold mb-3 flex items-center gap-3 text-[var(--text)]">
+            <Heart className="fill-current text-[var(--primary)]" strokeWidth={0} size={40} />
             Your Matches
           </h1>
-          <p className="text-gray-400 text-lg">Connections forged through the arena of value.</p>
+          <p className="text-[var(--text-secondary)] text-lg">Connections forged through the arena of value.</p>
         </header>
 
         {isLoading ? (
-          <div className="text-center text-gray-500 py-10 animate-pulse">Synchronizing connections...</div>
+          <div className="text-center py-10 animate-pulse text-[var(--text-muted)]">Synchronizing connections...</div>
         ) : matches.length === 0 ? (
-          <div className="glass p-16 rounded-3xl flex flex-col items-center justify-center text-gray-500 border border-dashed border-gray-700 bg-black/40 backdrop-blur-xl">
-            <AlertCircle size={64} className="mb-6 opacity-30 text-pink-500" />
-            <h2 className="text-2xl font-bold mb-2 text-white/70">No Matches Yet</h2>
-            <p className="text-center max-w-md">Win a Profile Auction or have someone win yours to unlock private connections.</p>
+          <div className="card p-16 flex flex-col items-center justify-center text-center">
+            <AlertCircle size={64} className="mb-6 opacity-80 text-[var(--primary)]" />
+            <h2 className="text-2xl font-bold mb-2">No Matches Yet</h2>
+            <p className="text-center max-w-md text-[var(--text-secondary)]">Win a Profile Auction or have someone win yours to unlock private connections.</p>
             <Link href="/profile-bidding">
-              <button className="mt-8 px-8 py-3 bg-white/5 border border-white/10 hover:border-pink-500/50 hover:bg-pink-500/10 rounded-xl transition-all duration-300 text-pink-400 font-bold">
+              <button className="btn-primary mt-8">
                 View Auctions
               </button>
             </Link>
@@ -70,28 +70,28 @@ export default function MatchesDashboard() {
             {/* Active Matches Section */}
             {activeMatches.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/10 pb-2">Active Connections</h2>
+                <h2 className="text-2xl font-bold mb-6 border-b pb-2" style={{ borderColor: 'var(--border)' }}>Active Connections</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {activeMatches.map((match) => {
                     const partner = match.user1.id === user.id ? match.user2 : match.user1;
                     return (
                       <Link href={`/matches/${match.id}`} key={match.id} className="block group">
-                        <div className="glass p-6 rounded-3xl border border-white/10 hover:border-pink-500/50 transition-all duration-500 relative overflow-hidden bg-gradient-to-b from-white/5 to-black/40 hover:shadow-[0_0_30px_rgba(236,72,153,0.15)] hover:-translate-y-1">
+                        <div className="card p-6 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative">
                           <div className="flex items-center gap-5 relative z-10">
                             <div className="relative">
-                              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-red-500 rounded-full flex items-center justify-center font-bold text-2xl shadow-[0_0_15px_rgba(236,72,153,0.5)] border-2 border-black">
+                              <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl text-white shadow-lg border-2 border-transparent" style={{ background: 'var(--primary)' }}>
                                 {partner?.profilePicture ? (
                                   <img src={partner.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
                                 ) : (
                                   partner?.stockSymbol || "?"
                                 )}
                               </div>
-                              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-black"></div>
+                              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2" style={{ background: 'var(--accent-green)', borderColor: 'var(--bg-card)' }}></div>
                             </div>
                             <div>
-                              <h3 className="text-xl font-bold text-white group-hover:text-pink-300 transition-colors">{partner?.name || "Unknown"}</h3>
-                              <p className="text-gray-400 text-sm flex items-center gap-1 mt-1">
-                                <MessageCircle size={14} className="text-pink-400" /> Tap to open chat
+                              <h3 className="text-xl font-bold transition-colors group-hover:text-[var(--primary)]">{partner?.name || "Unknown"}</h3>
+                              <p className="text-sm flex items-center gap-1 mt-1 text-[var(--text-secondary)]">
+                                <MessageCircle size={14} className="text-[var(--primary)]" /> Tap to open chat
                               </p>
                             </div>
                           </div>
@@ -105,25 +105,25 @@ export default function MatchesDashboard() {
 
             {/* Past Matches Section */}
             {pastMatches.length > 0 && (
-              <section className="opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                <h2 className="text-xl font-bold text-gray-400 mb-6 border-b border-white/5 pb-2">Completed</h2>
+              <section className="opacity-80 transition-all duration-300 hover:opacity-100">
+                <h2 className="text-xl font-bold mb-6 border-b pb-2 text-[var(--text-secondary)]" style={{ borderColor: 'var(--border)' }}>Completed</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {pastMatches.map((match) => {
                     const partner = match.user1.id === user.id ? match.user2 : match.user1;
                     const iRated = match.user1.id === user.id ? match.user1Rated : match.user2Rated;
                     return (
-                      <div key={match.id} className="glass p-4 rounded-2xl border border-white/5 bg-black/60 flex items-center justify-between">
+                      <div key={match.id} className="card p-4 flex items-center justify-between" style={{ background: 'var(--bg-input)' }}>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center font-bold text-sm">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-[var(--text)] border" style={{ borderColor: 'var(--border-strong)' }}>
                             {partner?.stockSymbol || "?"}
                           </div>
                           <div>
-                            <p className="text-white font-medium">{partner?.name || "Unknown"}</p>
-                            <p className="text-xs text-gray-500">Ended</p>
+                            <p className="font-medium text-[var(--text)]">{partner?.name || "Unknown"}</p>
+                            <p className="text-xs text-[var(--text-muted)]">Ended</p>
                           </div>
                         </div>
                         {iRated && (
-                          <div className="text-yellow-500 flex opacity-50">
+                          <div className="text-yellow-500 flex">
                             <Star size={16} className="fill-current" />
                           </div>
                         )}

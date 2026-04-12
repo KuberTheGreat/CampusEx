@@ -28,38 +28,37 @@ export default function ProfileBiddingDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
-      <div className="fixed top-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-900 rounded-full mix-blend-multiply blur-[128px] opacity-20" />
-      <div className="fixed bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-900 rounded-full mix-blend-multiply blur-[128px] opacity-20" />
+    <div className="min-h-screen p-6 relative overflow-hidden bg-[var(--bg)] text-[var(--text)]">
+      <div className="fixed top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply blur-[128px] opacity-20" style={{ background: "var(--primary)" }} />
+      <div className="fixed bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply blur-[128px] opacity-20" style={{ background: "var(--primary-soft)" }} />
 
       <div className="max-w-6xl mx-auto z-10 relative">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 mb-2">
+            <h1 className="text-4xl font-extrabold mb-2 text-[var(--text)]">
               Profile Bidding
             </h1>
-            <p className="text-gray-400">Bid on top profiles to unlock exclusive dating and chat mechanics.</p>
+            <p className="text-[var(--text-secondary)]">Bid on top profiles to unlock exclusive dating and chat mechanics.</p>
           </div>
         </header>
 
         {isLoading ? (
-          <div className="text-center text-gray-500 py-10 animate-pulse">Loading auctions...</div>
+          <div className="text-center py-10 animate-pulse text-[var(--text-muted)]">Loading auctions...</div>
         ) : auctions.length === 0 ? (
-          <div className="glass p-12 rounded-2xl flex flex-col items-center justify-center text-gray-500 border border-dashed border-gray-700">
-            <AlertCircle size={48} className="mb-4 opacity-50 text-pink-500" />
+          <div className="card p-12 flex flex-col items-center justify-center text-center">
+            <AlertCircle size={48} className="mb-4 opacity-50 text-[var(--primary)]" />
             <h2 className="text-xl font-bold mb-2">No Active Auctions</h2>
-            <p>Wait for the admin to launch the next profile bidding event.</p>
+            <p className="text-[var(--text-secondary)]">Wait for the admin to launch the next profile bidding event.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {auctions.map((auction) => {
               const target = auction.targetUser;
               return (
-                <div key={auction.id} className="glass p-6 rounded-3xl border border-white/10 hover:border-pink-500/30 transition-all duration-300 relative group overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500 rounded-full mix-blend-overlay filter blur-[50px] opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
+                <div key={auction.id} className="card p-6 overflow-hidden relative transition-all duration-300">
                   
                   <div className="flex items-center gap-4 mb-6 relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold text-2xl shadow-inner border border-white/20">
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl border" style={{ background: "var(--primary-soft)", color: "var(--primary)", borderColor: "var(--border)" }}>
                       {target?.profilePicture ? (
                         <img src={target.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
                       ) : (
@@ -67,19 +66,19 @@ export default function ProfileBiddingDashboard() {
                       )}
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-white">{target?.name || "Unknown"}</h2>
-                      <p className={`flex items-center gap-1 text-sm bg-black/40 px-2 py-1 rounded-md mt-1 w-fit ${auction.status === 'RESOLVING' ? 'text-orange-400' : 'text-gray-400'}`}>
+                      <h2 className="text-xl font-bold text-[var(--text)]">{target?.name || "Unknown"}</h2>
+                      <p className="flex items-center gap-1 text-sm px-2 py-1 rounded-md mt-1 w-fit" style={{ background: "var(--bg-input)", color: auction.status === 'RESOLVING' ? "var(--accent-red)" : "var(--text-secondary)" }}>
                         {auction.status === 'ACTIVE' ? (
-                          <><Clock size={12} className="text-pink-400" /> Ends: {new Date(auction.endTime).toLocaleTimeString()}</>
+                          <><Clock size={12} className="text-[var(--primary)]" /> Ends: {new Date(auction.endTime).toLocaleTimeString()}</>
                         ) : (
-                          <><AlertCircle size={12} className="text-orange-400" /> Auction Over - Target Deciding...</>
+                          <><AlertCircle size={12} style={{ color: "var(--accent-red)" }} /> Auction Over - Target Deciding...</>
                         )}
                       </p>
                     </div>
                   </div>
 
                   <Link href={`/profile-bidding/${auction.id}`}>
-                    <button className="w-full py-3 rounded-xl bg-pink-600/20 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/50 hover:border-pink-500 font-bold transition-all flex items-center justify-center gap-2 relative z-10">
+                    <button className="btn-primary w-full py-3 flex items-center justify-center gap-2">
                       <Gavel size={18} /> {auction.status === 'ACTIVE' ? 'Enter Auction' : 'View Resolution'} <ArrowRight size={16} />
                     </button>
                   </Link>

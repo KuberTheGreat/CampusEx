@@ -131,10 +131,10 @@ export default function MatchDetailPage() {
   };
 
   if (!user || isLoading) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-pink-500 animate-pulse font-bold text-2xl">Decrypting Connection...</div>;
+    return <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center text-[var(--primary)] animate-pulse font-bold text-2xl">Establishing Connection...</div>;
   }
 
-  if (!match) return <div className="p-10 text-white text-center">Match not found.</div>;
+  if (!match) return <div className="p-10 text-[var(--text)] text-center">Match not found.</div>;
 
   const partner = match.user1.id === user.id ? match.user2 : match.user1;
   const partnerTraits = partner.traits || [];
@@ -142,65 +142,61 @@ export default function MatchDetailPage() {
   const isEnded = match.status === 'ENDED';
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col md:flex-row overflow-hidden absolute inset-0">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col md:flex-row overflow-hidden absolute inset-0">
       
       {/* Left Panel: Profile Reveal & Actions */}
-      <div className="w-full md:w-1/3 xl:w-1/4 border-r border-white/10 bg-black/80 backdrop-blur-3xl flex flex-col z-20 overflow-y-auto">
+      <div className="w-full md:w-1/3 xl:w-1/4 border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col z-20 overflow-y-auto shadow-xl">
         <div className="p-6 pb-0 flex items-center gap-3">
-          <Link href="/matches" className="text-gray-400 hover:text-white transition-colors">
+          <Link href="/matches" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">
             <ArrowLeft size={24} />
           </Link>
-          <span className="font-bold tracking-widest text-xs text-pink-500 uppercase">Classified Intel</span>
+          <span className="font-bold tracking-widest text-xs text-[var(--text-secondary)] uppercase">Profile Profile</span>
         </div>
 
         <div className="p-8 flex flex-col items-center">
           <div className="relative mb-6">
-            <div className="w-32 h-32 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-4xl shadow-[0_0_40px_rgba(236,72,153,0.3)]">
+            <div className="w-32 h-32 rounded-full flex items-center justify-center text-4xl shadow-xl border-4" style={{ background: "var(--primary-soft)", borderColor: "var(--bg-card)", color: "var(--primary)" }}>
               {partner.profilePicture ? (
-                <img src={partner.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover border-4 border-black" />
+                <img src={partner.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
                 partner.stockSymbol || "?"
               )}
             </div>
             {isEnded && (
-              <div className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-black rotate-12">
+              <div className="absolute top-0 right-0 bg-[var(--accent-red)] text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-[var(--bg-card)] rotate-12">
                 CLOSED
               </div>
             )}
           </div>
 
-          <h1 className="text-3xl font-extrabold text-white mb-1">{partner.name || partner.email}</h1>
+          <h1 className="text-3xl font-extrabold text-[var(--text)] mb-1">{partner.name || partner.email}</h1>
           <div className="flex gap-4 text-sm font-semibold mb-8">
-            <span className="text-emerald-400">Stock: ${partner.currentPrice?.toFixed(2)}</span>
-            <span className="text-purple-400">Credibility: {partner.credibilityScore}</span>
+            <span style={{ color: "var(--accent-green)" }}>Stock: ${partner.currentPrice?.toFixed(2)}</span>
+            <span style={{ color: "var(--accent-purple)" }}>Credibility: {partner.credibilityScore}</span>
           </div>
 
-          <div className="w-full bg-white/5 rounded-2xl p-5 border border-white/10 shadow-inner mb-6">
-            <h3 className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-              <ShieldAlert size={16} className="text-pink-500" /> Unredacted Traits
+          <div className="w-full bg-[var(--bg-input)] rounded-2xl p-5 border border-[var(--border)] shadow-inner mb-6">
+            <h3 className="text-[var(--text-secondary)] text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+              <ShieldAlert size={16} className="text-[var(--primary)]" /> Traits
             </h3>
             {partnerTraits.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {partnerTraits.map((t: any) => (
-                  <span key={t.id} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                    t.isHidden 
-                    ? "bg-pink-500/20 text-pink-300 border border-pink-500/30" 
-                    : "bg-white/10 text-gray-300 border border-white/5"
-                  }`}>
-                    {t.name} {t.isHidden && <span className="ml-1 opacity-50 text-xs">(Hidden)</span>}
+                  <span key={t.id} className={`badge ${t.isHidden ? "" : "badge-green"}`}>
+                    {t.name} {t.isHidden && <span className="ml-1 opacity-70 text-xs">(Hidden)</span>}
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 italic text-sm">No traits defined.</p>
+              <p className="text-[var(--text-muted)] italic text-sm">No traits defined.</p>
             )}
           </div>
 
           {!isEnded && (
             <div className="w-full space-y-6">
               {/* Gift Section */}
-              <div className="glass p-5 rounded-2xl border border-white/5">
-                <h4 className="font-bold flex items-center gap-2 mb-3 text-sm text-yellow-500">
+              <div className="card p-5">
+                <h4 className="font-bold flex items-center gap-2 mb-3 text-sm" style={{ color: "var(--primary)" }}>
                   <Gift size={16} /> Gift Aura Coins
                 </h4>
                 <form onSubmit={sendGift} className="flex gap-2">
@@ -210,9 +206,9 @@ export default function MatchDetailPage() {
                     placeholder="Amount..."
                     value={giftAmount}
                     onChange={(e) => setGiftAmount(e.target.value)}
-                    className="flex-1 bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-yellow-500/50"
+                    className="input flex-1"
                   />
-                  <button type="submit" className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-4 rounded-xl transition-colors">
+                  <button type="submit" className="btn-primary px-4">
                     Send
                   </button>
                 </form>
@@ -220,9 +216,9 @@ export default function MatchDetailPage() {
 
               {/* Rate Section */}
               {!iRated ? (
-                <div className="glass p-5 rounded-2xl border border-white/5 text-center">
-                  <h4 className="font-bold mb-3 text-sm text-gray-300">Rate Experience</h4>
-                  <p className="text-xs text-gray-500 mb-4 px-2">Submit a rating to close this match. 4+ stars heavily boosts their value. 2- stars damages it.</p>
+                <div className="card p-5 text-center">
+                  <h4 className="font-bold mb-3 text-sm text-[var(--text)]">Rate Experience</h4>
+                  <p className="text-xs text-[var(--text-secondary)] mb-4 px-2">Submit a rating to close this match. 4+ stars heavily boosts their value. 2- stars damages it.</p>
                   <div className="flex justify-center gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -231,7 +227,7 @@ export default function MatchDetailPage() {
                         onMouseEnter={() => setRating(star)}
                         onMouseLeave={() => setRating(0)}
                         className={`transition-colors ${
-                          rating >= star ? "text-yellow-400" : "text-gray-600 hover:text-yellow-600"
+                          rating >= star ? "text-yellow-400" : "text-[var(--border-strong)] hover:text-yellow-600"
                         }`}
                       >
                         <Star className="fill-current" size={32} />
@@ -240,7 +236,7 @@ export default function MatchDetailPage() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center text-pink-500 font-bold bg-pink-500/10 py-3 rounded-xl border border-pink-500/30">
+                <div className="text-center font-bold badge badge-green py-3 px-6 w-full justify-center">
                   Rating Submitted
                 </div>
               )}
@@ -248,7 +244,7 @@ export default function MatchDetailPage() {
           )}
 
           {actionMessage && (
-            <div className="mt-4 text-sm font-medium text-center text-green-400 bg-green-400/10 px-4 py-2 rounded-lg w-full transition-opacity">
+            <div className="mt-4 text-sm font-medium text-center badge badge-green py-2 w-full justify-center">
               {actionMessage}
             </div>
           )}
@@ -256,14 +252,13 @@ export default function MatchDetailPage() {
       </div>
 
       {/* Right Panel: Chat Interface */}
-      <div className="flex-1 flex flex-col relative z-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed">
-        <div className="absolute inset-0 bg-black/90 pointer-events-none" />
+      <div className="flex-1 flex flex-col relative z-10 bg-[var(--bg)]">
         
         {/* Chat Header */}
-        <div className="h-20 border-b border-white/10 flex items-center px-8 relative z-10 bg-black/50 backdrop-blur-md">
+        <div className="h-20 border-b border-[var(--border)] flex items-center px-8 relative z-10 bg-[var(--bg-card)]">
           <div>
-            <h2 className="text-xl font-bold">Encrypted Channel</h2>
-            <p className="text-xs text-pink-500 font-mono">End-to-End Secure // Session {match.id}</p>
+            <h2 className="text-xl font-bold text-[var(--text)]">Private Channel</h2>
+            <p className="text-xs text-[var(--text-secondary)] font-mono">End-to-End Secure // Session {match.id}</p>
           </div>
         </div>
 
@@ -273,10 +268,10 @@ export default function MatchDetailPage() {
           className="flex-1 p-8 overflow-y-auto space-y-6 relative z-10 scroll-smooth"
         >
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center opacity-30 text-center">
+            <div className="h-full flex flex-col items-center justify-center opacity-50 text-[var(--text-secondary)] text-center">
               <MessageCircle size={64} className="mb-4" />
               <p className="text-xl font-medium">Say hello.</p>
-              <p className="text-sm">Initiate the conversation safely.</p>
+              <p className="text-sm">Initiate the conversation securely.</p>
             </div>
           ) : (
             messages.map((msg, i) => {
@@ -284,14 +279,14 @@ export default function MatchDetailPage() {
               return (
                 <div key={i} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div className={`
-                    max-w-[70%] rounded-3xl px-6 py-4 shadow-xl
+                    max-w-[70%] rounded-3xl px-6 py-4 shadow-sm
                     ${isMine 
-                      ? "bg-gradient-to-br from-pink-600 to-purple-600 rounded-tr-sm text-white" 
-                      : "glass border border-white/10 rounded-tl-sm text-gray-200"
+                      ? "bg-[var(--primary)] rounded-tr-sm text-white" 
+                      : "card bg-[var(--bg-input)] rounded-tl-sm text-[var(--text)]"
                     }
                   `}>
                     <p className="whitespace-pre-wrap">{msg.text}</p>
-                    <div className={`text-[10px] mt-2 opacity-50 font-mono text-right`}>
+                    <div className={`text-[10px] mt-2 opacity-70 font-mono text-right`}>
                       {new Date(msg.createdAt).toLocaleTimeString()}
                     </div>
                   </div>
@@ -302,9 +297,9 @@ export default function MatchDetailPage() {
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-black/60 backdrop-blur-xl border-t border-white/10 relative z-10">
+        <div className="p-6 bg-[var(--bg-card)] border-t border-[var(--border)] relative z-10">
           {isEnded ? (
-            <div className="text-center text-gray-500 py-4 font-bold border border-dashed border-gray-700 rounded-2xl bg-white/5">
+            <div className="text-center text-[var(--text-secondary)] py-4 font-bold border border-dashed border-[var(--border-strong)] rounded-2xl bg-[var(--bg-input)]">
               CONNECTION TERMINATED
             </div>
           ) : (
@@ -315,13 +310,13 @@ export default function MatchDetailPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
-                  className="w-full bg-white/10 border border-white/20 focus:border-pink-500 outline-none rounded-full pl-6 pr-6 py-4 text-white placeholder-gray-500 transition-all shadow-inner"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border)] focus:border-[var(--primary)] outline-none rounded-full pl-6 pr-6 py-4 text-[var(--text)] placeholder-[var(--text-muted)] transition-all shadow-inner"
                 />
               </div>
               <button 
                 type="submit"
                 disabled={!newMessage.trim()}
-                className="w-14 h-14 rounded-full bg-pink-600 hover:bg-pink-500 flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all transform hover:scale-105 active:scale-95"
+                className="btn-primary w-14 h-14 !p-0 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_var(--shadow)] transition-all transform hover:scale-105 active:scale-95 text-white"
               >
                 <Send size={20} className="ml-1" />
               </button>

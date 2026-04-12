@@ -99,18 +99,18 @@ export default function ProfileAuctionDetails() {
     }
   };
 
-  if (isLoading) return <div className="min-h-screen bg-black text-white p-10">Loading...</div>;
-  if (!auction) return <div className="min-h-screen bg-black text-white p-10">Auction not found</div>;
+  if (isLoading) return <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-10 flex items-center justify-center animate-pulse">Establishing Connection...</div>;
+  if (!auction) return <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-10 text-center">Auction not found</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12">
-      <Link href="/profile-bidding" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-6 md:p-12">
+      <Link href="/profile-bidding" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--primary)] mb-8 transition-colors">
         <ArrowLeft size={20} /> Back to Auctions
       </Link>
 
-      <div className="max-w-4xl mx-auto glass p-8 rounded-3xl border border-white/10">
-        <div className="flex flex-col md:flex-row items-center gap-6 mb-8 border-b border-gray-800 pb-8">
-           <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold text-4xl shadow-inner border border-white/20">
+      <div className="max-w-4xl mx-auto card p-8 border-[var(--border)] shadow-xl">
+        <div className="flex flex-col md:flex-row items-center gap-6 mb-8 border-b border-[var(--border-strong)] pb-8">
+           <div className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-4xl shadow-inner border border-[var(--border)]" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>
               {auction.targetUser?.profilePicture ? (
                 <img src={auction.targetUser.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
@@ -118,11 +118,11 @@ export default function ProfileAuctionDetails() {
               )}
            </div>
            <div className="text-center md:text-left flex-1">
-             <h1 className="text-3xl font-bold mb-2">Auction for {auction.targetUser?.name}</h1>
-             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-gray-400">
-               <span className="flex items-center gap-1 bg-black/40 px-3 py-1 rounded-full"><Clock size={14} className="text-pink-400"/> Status: {auction.status}</span>
+             <h1 className="text-3xl font-bold mb-2 text-[var(--text)]">Auction for {auction.targetUser?.name}</h1>
+             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-[var(--text-secondary)]">
+               <span className="flex items-center gap-1 bg-[var(--bg-input)] px-3 py-1 rounded-full"><Clock size={14} className="text-[var(--primary)]"/> Status: {auction.status}</span>
                {auction.status === "ACTIVE" && (
-                 <span className="flex items-center gap-1 bg-black/40 px-3 py-1 rounded-full">Ends: {new Date(auction.endTime).toLocaleTimeString()}</span>
+                 <span className="flex items-center gap-1 bg-[var(--bg-input)] px-3 py-1 rounded-full">Ends: {new Date(auction.endTime).toLocaleTimeString()}</span>
                )}
              </div>
            </div>
@@ -130,44 +130,44 @@ export default function ProfileAuctionDetails() {
 
         {/* Bidding Area (Only if active and not the target) */}
         {auction.status === "ACTIVE" && !isTargetUser && (
-          <div className="bg-black/50 p-6 rounded-2xl border border-gray-800 mb-8">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><ShieldCheck className="text-emerald-400" /> Place Your Bid</h2>
+          <div className="bg-[var(--bg-input)] p-6 rounded-2xl border border-[var(--border)] mb-8">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><ShieldCheck style={{ color: "var(--accent-green)" }} /> Place Your Bid</h2>
             <div className="flex justify-between items-center mb-6">
-              <span className="text-gray-400">Current Highest Bid:</span>
-              <span className="text-2xl font-bold text-pink-400">{highestBid} Au</span>
+              <span className="text-[var(--text-secondary)]">Current Highest Bid:</span>
+              <span className="text-2xl font-bold text-[var(--primary)]">{highestBid} Au</span>
             </div>
             
             {userExistingBid ? (
-              <div className="bg-emerald-900/20 border border-emerald-500/30 p-4 rounded-xl text-center text-emerald-400">
+              <div className="border p-4 rounded-xl text-center" style={{ background: "rgba(52, 199, 89, 0.1)", borderColor: "rgba(52, 199, 89, 0.3)", color: "var(--accent-green)" }}>
                 <CheckCircle className="mx-auto mb-2" size={32} />
                 <h3 className="font-bold text-lg mb-1">Bid Logged Successfully!</h3>
-                <p className="text-sm text-emerald-500/80">You have a pending bid of {userExistingBid.amount} Au. Wait for the auction to end!</p>
+                <p className="text-sm opacity-80">You have a pending bid of {userExistingBid.amount} Au. Wait for the auction to end!</p>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Your Bid (AURA)</label>
+                  <label className="text-sm text-[var(--text-secondary)] block mb-2">Your Bid (AURA)</label>
                   <input 
                     type="number" 
                     min={highestBid + 1}
                     value={bidAmount}
                     onChange={(e) => setBidAmount(Number(e.target.value))}
-                    className="w-full bg-black border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
+                    className="input w-full"
                   />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Secret Message (sent to target)</label>
+                  <label className="text-sm text-[var(--text-secondary)] block mb-2">Secret Message (sent to target)</label>
                   <textarea 
                     rows={2}
                     value={bidMessage}
                     onChange={(e) => setBidMessage(e.target.value)}
                     placeholder="Why should they pick you?"
-                    className="w-full bg-black border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
+                    className="input w-full"
                   />
                 </div>
                 <button 
                   onClick={placeBid}
-                  className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-xl transition-all"
+                  className="btn-primary w-full"
                 >
                   Submit Bid
                 </button>
@@ -179,28 +179,28 @@ export default function ProfileAuctionDetails() {
         {/* Resolution Area (Only for target user when not COMPLETE) */}
         {isTargetUser && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-6 text-pink-400">Bidder Rankings</h2>
+            <h2 className="text-2xl font-bold mb-6 text-[var(--primary)]">Bidder Rankings</h2>
             {auction.status === "ACTIVE" && (
-               <div className="bg-blue-900/20 text-blue-400 border border-blue-500/30 p-4 rounded-xl mb-6">
+               <div className="badge badge-green w-full py-3 justify-center mb-6 text-sm">
                  Auction is still active. Come back when it ends to accept or reject bidders!
                </div>
             )}
             
             <div className="space-y-4">
               {auction.status === "ACTIVE" ? (
-                <div className="opacity-50 text-center py-10 border border-dashed border-gray-800 rounded-2xl">
+                <div className="opacity-70 text-center py-10 border border-dashed border-[var(--border-strong)] rounded-2xl bg-[var(--bg-input)]">
                   Profiles and secret messages are kept completely hidden from you until the timer runs out.
                 </div>
               ) : (
                 topBids.map((bid, index) => (
-                  <div key={bid.id} className={`p-5 rounded-2xl border ${bid.status === "PENDING" && auction.status === "RESOLVING" ? "border-pink-500/50 bg-black/60 shadow-[0_0_15px_rgba(236,72,153,0.3)]" : "border-gray-800 bg-black/40"}`}>
+                  <div key={bid.id} className={`p-5 rounded-2xl border ${bid.status === "PENDING" && auction.status === "RESOLVING" ? "shadow-lg bg-[var(--bg-card)]" : "bg-[var(--bg-input)]"}`} style={{ borderColor: bid.status === "PENDING" && auction.status === "RESOLVING" ? "var(--primary)" : "var(--border-strong)" }}>
                      <div className="flex justify-between items-start mb-3">
                        <span className="font-bold text-lg">#{index + 1} - {bid.bidder?.name}</span>
-                       <span className="font-bold text-xl text-emerald-400">{bid.amount} Au</span>
+                       <span className="font-bold text-xl" style={{ color: "var(--accent-green)" }}>{bid.amount} Au</span>
                      </div>
                      {bid.message && (
-                       <div className="bg-gray-900 p-3 rounded-lg text-sm text-gray-300 italic flex gap-2 items-start mb-4">
-                         <MessagesSquare size={16} className="mt-0.5 text-gray-500 shrink-0" />
+                       <div className="p-3 rounded-lg text-sm italic flex gap-2 items-start mb-4 bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)]">
+                         <MessagesSquare size={16} className="mt-0.5 text-[var(--text-muted)] shrink-0" />
                          "{bid.message}"
                        </div>
                      )}
@@ -208,21 +208,21 @@ export default function ProfileAuctionDetails() {
                      {/* Actions for resolving */}
                      {auction.status === "RESOLVING" && bid.status === "PENDING" && index === activePendingBidIndex && (
                        <div className="flex gap-3 mt-4">
-                         <button onClick={() => resolveAuction(bid.id, "ACCEPT")} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition">
+                         <button onClick={() => resolveAuction(bid.id, "ACCEPT")} className="flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition" style={{ background: "var(--accent-green)", color: "white" }}>
                             <CheckCircle size={18} /> Accept Match
                          </button>
                          {auction.rejectionsLeft > 0 && index < topBids.length - 1 ? (
-                           <button onClick={() => resolveAuction(bid.id, "REJECT")} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition">
+                           <button onClick={() => resolveAuction(bid.id, "REJECT")} className="flex-1 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition" style={{ background: "var(--accent-red)", color: "white" }}>
                               <XCircle size={18} /> Reject ({auction.rejectionsLeft} left)
                            </button>
                          ) : (
-                           <div className="text-red-500 text-sm mt-2 font-bold bg-red-900/20 px-3 py-2 rounded text-center w-full">Final eligible bidder. You cannot reject!</div>
+                           <div className="text-sm mt-2 font-bold px-3 py-2 rounded text-center w-full" style={{ background: "rgba(255, 59, 48, 0.1)", color: "var(--accent-red)" }}>Final eligible bidder. You cannot reject!</div>
                          )}
                        </div>
                      )}
   
                      {bid.status !== "PENDING" && (
-                       <div className={`mt-2 text-sm font-bold ${bid.status === "ACCEPTED" ? "text-emerald-500" : "text-gray-500"}`}>
+                       <div className="mt-2 text-sm font-bold" style={{ color: bid.status === "ACCEPTED" ? "var(--accent-green)" : "var(--text-muted)" }}>
                          Status: {bid.status}
                        </div>
                      )}
@@ -230,7 +230,7 @@ export default function ProfileAuctionDetails() {
                 ))
               )}
               {auction.status !== "ACTIVE" && topBids.length === 0 && (
-                <div className="text-gray-500 italic">No bids were placed on you.</div>
+                <div className="text-[var(--text-muted)] italic">No bids were placed on you.</div>
               )}
             </div>
           </div>
@@ -239,18 +239,18 @@ export default function ProfileAuctionDetails() {
         {/* Active Viewer (Not target) - View only bids */}
         {!isTargetUser && (
            <div>
-             <h2 className="font-bold text-gray-400 mb-4">Recent Bids</h2>
+             <h2 className="font-bold text-[var(--text-secondary)] mb-4">Recent Bids</h2>
              <div className="space-y-2">
                {bids.map((bid) => (
-                 <div key={bid.id} className="bg-black/40 border border-gray-800 p-3 rounded-xl flex justify-between items-center">
+                 <div key={bid.id} className="bg-[var(--bg-input)] border border-[var(--border)] p-3 rounded-xl flex justify-between items-center">
                    <div className="flex items-center gap-2">
-                     <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs">{bid.bidder?.stockSymbol}</div>
-                     <span>{bid.bidder?.name}</span>
+                     <div className="w-8 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-xs text-[var(--text)]">{bid.bidder?.stockSymbol}</div>
+                     <span className="text-[var(--text)]">{bid.bidder?.name}</span>
                    </div>
-                   <span className="font-bold text-emerald-400">{bid.amount} Au</span>
+                   <span className="font-bold" style={{ color: "var(--accent-green)" }}>{bid.amount} Au</span>
                  </div>
                ))}
-               {bids.length === 0 && <span className="text-sm text-gray-500">No bids placed.</span>}
+               {bids.length === 0 && <span className="text-sm text-[var(--text-muted)]">No bids placed.</span>}
              </div>
            </div>
         )}
