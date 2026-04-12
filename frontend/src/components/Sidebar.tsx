@@ -10,6 +10,7 @@ export default function Sidebar() {
 
   const links = [
     { name: "Market Hub", path: "/dashboard", icon: "📈" },
+    { name: "Portfolio", path: "/portfolio", icon: "💼" },
     { name: "Global 3D Feed", path: "/3d-market", icon: "🌐" },
     { name: "Event Bids", path: "/events", icon: "🏆" },
     { name: "News Feed", path: "/news", icon: "📰" },
