@@ -56,8 +56,8 @@ export default function PortfolioPage() {
     <div className="min-h-screen p-6 animate-fade-in" style={{ background: "var(--bg)" }}>
       <div className="max-w-5xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Your Portfolio</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Track investments, unrealized gains, and performance.</p>
+          <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>💰 Your Portfolio</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>stonks go up? let's find out 📊</p>
         </header>
 
         {/* Summary Cards */}

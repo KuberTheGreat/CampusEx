@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import { Clock, ShieldCheck, XCircle, MessagesSquare, CheckCircle, ArrowLeft } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import Link from "next/link";
 
 export default function ProfileAuctionDetails() {
@@ -110,13 +111,7 @@ export default function ProfileAuctionDetails() {
 
       <div className="max-w-4xl mx-auto card p-8 border-[var(--border)] shadow-xl">
         <div className="flex flex-col md:flex-row items-center gap-6 mb-8 border-b border-[var(--border-strong)] pb-8">
-           <div className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-4xl shadow-inner border border-[var(--border)]" style={{ background: "var(--primary-soft)", color: "var(--primary)" }}>
-              {auction.targetUser?.profilePicture ? (
-                <img src={auction.targetUser.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                auction.targetUser?.stockSymbol || "UK"
-              )}
-           </div>
+           <Avatar userId={auction.targetUser?.id} name={auction.targetUser?.name} size={96} />
            <div className="text-center md:text-left flex-1">
              <h1 className="text-3xl font-bold mb-2 text-[var(--text)]">Auction for {auction.targetUser?.name}</h1>
              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-[var(--text-secondary)]">
@@ -244,7 +239,7 @@ export default function ProfileAuctionDetails() {
                {bids.map((bid) => (
                  <div key={bid.id} className="bg-[var(--bg-input)] border border-[var(--border)] p-3 rounded-xl flex justify-between items-center">
                    <div className="flex items-center gap-2">
-                     <div className="w-8 h-8 rounded-full bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-xs text-[var(--text)]">{bid.bidder?.stockSymbol}</div>
+                     <Avatar userId={bid.bidder?.id} name={bid.bidder?.name} size={32} />
                      <span className="text-[var(--text)]">{bid.bidder?.name}</span>
                    </div>
                    <span className="font-bold" style={{ color: "var(--accent-green)" }}>{bid.amount} Au</span>

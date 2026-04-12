@@ -22,7 +22,7 @@ export default function Home() {
 
   // Load Lottie animation from CDN
   useEffect(() => {
-    fetch("https://lottie.host/39c556ee-ef1f-4beb-ad61-b41b7efeadaf/kf8hiJfHtQ.json")
+    fetch("/lottie/stock-market.json")
       .then(r => r.json()).then(setLottieData).catch(() => {});
   }, []);
 

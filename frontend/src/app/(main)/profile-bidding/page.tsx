@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Clock, ArrowRight, Gavel, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import Avatar from "@/components/Avatar";
 
 export default function ProfileBiddingDashboard() {
   const [auctions, setAuctions] = useState<any[]>([]);
@@ -58,12 +59,8 @@ export default function ProfileBiddingDashboard() {
                 <div key={auction.id} className="card p-6 overflow-hidden relative transition-all duration-300">
                   
                   <div className="flex items-center gap-4 mb-6 relative z-10">
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl border" style={{ background: "var(--primary-soft)", color: "var(--primary)", borderColor: "var(--border)" }}>
-                      {target?.profilePicture ? (
-                        <img src={target.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        target?.stockSymbol || "UK"
-                      )}
+                    <div className="w-16 h-16 rounded-full overflow-hidden border" style={{ borderColor: "var(--border)" }}>
+                      <Avatar userId={target?.id} name={target?.name} size={64} />
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-[var(--text)]">{target?.name || "Unknown"}</h2>

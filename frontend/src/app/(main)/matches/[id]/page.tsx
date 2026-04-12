@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import { Send, Star, Gift, ShieldAlert, ArrowLeft, MessageCircle } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import Link from "next/link";
 
 export default function MatchDetailPage() {
@@ -145,23 +146,17 @@ export default function MatchDetailPage() {
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col md:flex-row overflow-hidden absolute inset-0">
       
       {/* Left Panel: Profile Reveal & Actions */}
-      <div className="w-full md:w-1/3 xl:w-1/4 border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col z-20 overflow-y-auto shadow-xl">
+      <div className="w-full md:w-1/3 xl:w-1/4 border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col z-20 overflow-y-auto overflow-x-hidden shadow-xl">
         <div className="p-6 pb-0 flex items-center gap-3">
           <Link href="/matches" className="text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors">
             <ArrowLeft size={24} />
           </Link>
-          <span className="font-bold tracking-widest text-xs text-[var(--text-secondary)] uppercase">Profile Profile</span>
+          <span className="font-bold tracking-widest text-xs text-[var(--text-secondary)] uppercase">Match Profile</span>
         </div>
 
         <div className="p-8 flex flex-col items-center">
           <div className="relative mb-6">
-            <div className="w-32 h-32 rounded-full flex items-center justify-center text-4xl shadow-xl border-4" style={{ background: "var(--primary-soft)", borderColor: "var(--bg-card)", color: "var(--primary)" }}>
-              {partner.profilePicture ? (
-                <img src={partner.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                partner.stockSymbol || "?"
-              )}
-            </div>
+            <Avatar userId={partner.id} name={partner.name} size={128} />
             {isEnded && (
               <div className="absolute top-0 right-0 bg-[var(--accent-red)] text-white text-xs font-bold px-2 py-1 rounded-full border-2 border-[var(--bg-card)] rotate-12">
                 CLOSED

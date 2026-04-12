@@ -5,18 +5,18 @@
    Beige/off-white feel — NO harsh whites
    ────────────────────────────────────────── */
 :root {
-  --bg: #FFF8EE;
-  --bg-card: #FFF5E8;
-  --bg-hover: #FFEDD5;
-  --bg-input: #FFF2DC;
+  --bg: #F5EFE0;
+  --bg-card: #FAF5EB;
+  --bg-hover: #F0E6D2;
+  --bg-input: #FAF3E4;
   --primary: #FF8C00;
   --primary-hover: #E67E00;
   --primary-soft: #FFF0D4;
   --text: #1A1A1A;
   --text-secondary: #6B6B6B;
   --text-muted: #ABABAB;
-  --border: #EEE2CF;
-  --border-strong: #DDD0BA;
+  --border: #E5D9C3;
+  --border-strong: #D4C5AA;
   --accent-green: #34C759;
   --accent-red: #FF3B30;
   --accent-blue: #007AFF;
@@ -24,13 +24,13 @@
   --shadow: rgba(0,0,0,0.05);
   --shadow-lg: rgba(0,0,0,0.10);
 
-  /* Card accent palette — soft pastels */
-  --card-mint: #E8FAF0;
-  --card-lavender: #F0E8FA;
-  --card-peach: #FAEEE8;
-  --card-sky: #E8F0FA;
-  --card-rose: #FAE8EE;
-  --card-lemon: #FAF8E8;
+  /* Card accent palette — vibrant & fun */
+  --card-mint: #A8F0C8;
+  --card-lavender: #CDB4F0;
+  --card-peach: #FFD0A8;
+  --card-sky: #A8D4F5;
+  --card-rose: #F5A8C0;
+  --card-lemon: #F0EC8A;
 }
 
 /* ──────────────────────────────────────────
@@ -56,13 +56,13 @@
   --shadow: rgba(0,0,0,0.35);
   --shadow-lg: rgba(0,0,0,0.55);
 
-  /* Card accent palette — muted dark pastels */
-  --card-mint: #14201A;
-  --card-lavender: #1A1420;
-  --card-peach: #201A14;
-  --card-sky: #141A20;
-  --card-rose: #201418;
-  --card-lemon: #20201A;
+  /* Card accent palette — vivid dark tints */
+  --card-mint: #13332A;
+  --card-lavender: #281840;
+  --card-peach: #3D2615;
+  --card-sky: #142840;
+  --card-rose: #3D1428;
+  --card-lemon: #33301A;
 }
 
 @theme {
@@ -98,34 +98,22 @@ body {
 }
 
 /* ──────────────────────────────────────────
-   STOCK CARD — hover-expand animation
+   STOCK CARD — always expanded, no hover
    ────────────────────────────────────────── */
 .stock-card {
-  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: 0 2px 12px var(--shadow);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   overflow: hidden;
 }
 
 .stock-card:hover {
   box-shadow: 0 8px 32px var(--shadow-lg);
-  border-color: var(--border-strong);
   transform: translateY(-4px);
 }
 
 .stock-card .card-expand {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, padding 0.3s ease;
-  padding: 0 20px;
-}
-
-.stock-card:hover .card-expand {
-  max-height: 200px;
-  opacity: 1;
   padding: 0 20px 20px;
 }
 

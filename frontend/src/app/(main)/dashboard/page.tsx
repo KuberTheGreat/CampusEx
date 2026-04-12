@@ -12,6 +12,8 @@ const CARD_ACCENTS = [
   "var(--card-sky)", "var(--card-rose)", "var(--card-lemon)",
 ];
 
+const RANK_BADGES = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -110,10 +112,10 @@ export default function Dashboard() {
         {/* Header */}
         <header className="flex justify-between items-center mb-8 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Market Hub</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Browse, analyze, and trade campus stocks.</p>
+            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>🏪 Market Hub</h1>
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>trade ppl like stocks. yes, we went there. 💅</p>
           </div>
-          <div className="card px-5 py-3 flex items-center gap-3">
+          <div className="card px-5 py-3 flex items-center gap-3 animate-pulse-glow">
             <span className="text-lg">✨</span>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Your AURA</div>
@@ -154,10 +156,13 @@ export default function Dashboard() {
 
                   return (
                     <div key={s.id} className="stock-card" style={{ background: accent }}>
-                      {/* ── Compact top section (always visible) ── */}
+                      {/* ── Top section ── */}
                       <div className="p-5">
                         <div className="flex items-center gap-3 mb-3">
-                          <Avatar userId={s.id} name={s.name} size={44} />
+                          <div className="relative">
+                            <Avatar userId={s.id} name={s.name} size={44} />
+                            <span className="absolute -top-1 -left-1 text-sm">{RANK_BADGES[idx] || ""}</span>
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-sm truncate" style={{ color: "var(--text)" }}>{s.name}</div>
                             <div className="text-xs font-bold" style={{ color: "var(--primary)" }}>${s.stockSymbol}</div>
@@ -182,7 +187,7 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      {/* ── Expandable section (on hover) ── */}
+                      {/* ── Always visible details ── */}
                       <div className="card-expand">
                         {/* Mini sparkline */}
                         <div className="h-16 w-full mb-3 rounded-lg overflow-hidden" style={{ background: "var(--bg)" }}>
@@ -220,7 +225,7 @@ export default function Dashboard() {
           {/* ═══════ PORTFOLIO SIDEBAR ═══════ */}
           <div className="space-y-4">
             <div className="card p-5">
-              <h2 className="font-bold text-base mb-4" style={{ color: "var(--text)" }}>Your Portfolio</h2>
+              <h2 className="font-bold text-base mb-4" style={{ color: "var(--text)" }}>💼 Your Bag</h2>
               {portfolio.length === 0 ? (
                 <div className="text-center py-6 text-sm" style={{ color: "var(--text-muted)", border: "1px dashed var(--border)", borderRadius: "14px" }}>
                   No stocks owned yet.

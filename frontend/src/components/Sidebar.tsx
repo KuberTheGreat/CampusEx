@@ -5,10 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import Avatar from "@/components/Avatar";
-import {
-  BarChart3, Briefcase, Globe, Trophy, Heart, Flame,
-  Newspaper, PenLine, Zap, Moon, Sun,
-} from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -16,15 +13,15 @@ export default function Sidebar() {
   const { theme, toggleTheme } = useTheme();
 
   const links = [
-    { name: "Market", path: "/dashboard", icon: BarChart3 },
-    { name: "Portfolio", path: "/portfolio", icon: Briefcase },
-    { name: "3D View", path: "/3d-market", icon: Globe },
-    { name: "Events", path: "/events", icon: Trophy },
-    { name: "Profile Bids", path: "/profile-bidding", icon: Heart },
-    { name: "My Matches", path: "/matches", icon: Flame },
-    { name: "News", path: "/news", icon: Newspaper },
-    { name: "Publish", path: "/news/create", icon: PenLine },
-    { name: "Shop", path: "/shop", icon: Zap },
+    { name: "Market", path: "/dashboard", icon: "📈" },
+    { name: "Portfolio", path: "/portfolio", icon: "💼" },
+    { name: "3D View", path: "/3d-market", icon: "🌐" },
+    { name: "Events", path: "/events", icon: "🎪" },
+    { name: "Profile Bids", path: "/profile-bidding", icon: "💘" },
+    { name: "My Matches", path: "/matches", icon: "🔥" },
+    { name: "News", path: "/news", icon: "📰" },
+    { name: "Publish", path: "/news/create", icon: "✍️" },
+    { name: "Shop", path: "/shop", icon: "⚡" },
   ];
 
   return (
@@ -41,7 +38,7 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-white text-sm flex-shrink-0" style={{ background: "var(--primary)" }}>
+        <div className="w-9 h-9 rounded-2xl flex items-center justify-center font-extrabold text-white text-sm flex-shrink-0 animate-pulse-glow" style={{ background: "var(--primary)" }}>
           Cx
         </div>
         <span className="font-extrabold text-lg whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300" style={{ color: "var(--text)" }}>
@@ -53,7 +50,6 @@ export default function Sidebar() {
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-hidden">
         {links.map((link) => {
           const isActive = pathname === link.path;
-          const Icon = link.icon;
           return (
             <Link
               key={link.path}
@@ -67,7 +63,7 @@ export default function Sidebar() {
               onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
               onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
             >
-              <Icon size={20} className="flex-shrink-0" style={{ marginLeft: 2 }} />
+              <span className="text-xl flex-shrink-0 w-5 text-center" style={{ marginLeft: 2 }}>{link.icon}</span>
               <span className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 text-sm">
                 {link.name}
               </span>
@@ -86,7 +82,11 @@ export default function Sidebar() {
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
         >
-          {theme === "light" ? <Moon size={20} className="flex-shrink-0" style={{ marginLeft: 2 }} /> : <Sun size={20} className="flex-shrink-0" style={{ marginLeft: 2 }} />}
+          {theme === "light" ? (
+            <span className="text-xl flex-shrink-0 w-5 text-center" style={{ marginLeft: 2 }}>🌙</span>
+          ) : (
+            <span className="text-xl flex-shrink-0 w-5 text-center" style={{ marginLeft: 2 }}>☀️</span>
+          )}
           <span className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 text-sm font-medium">
             {theme === "light" ? "Dark Mode" : "Light Mode"}
           </span>
@@ -103,7 +103,7 @@ export default function Sidebar() {
             <Avatar userId={user.id} name={user.name} size={32} />
             <div className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300">
               <div className="text-sm font-bold" style={{ color: "var(--text)" }}>{user.name}</div>
-              <div className="text-[10px] font-semibold" style={{ color: "var(--primary)" }}>{user.stockSymbol}</div>
+              <div className="text-[10px] font-semibold" style={{ color: "var(--primary)" }}>${user.stockSymbol}</div>
             </div>
           </Link>
         )}

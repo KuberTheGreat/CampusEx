@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Heart, MessageCircle, Star, AlertCircle } from "lucide-react";
+import Avatar from "@/components/Avatar";
 import Link from "next/link";
 
 export default function MatchesDashboard() {
@@ -79,13 +80,7 @@ export default function MatchesDashboard() {
                         <div className="card p-6 hover:-translate-y-1 transition-all duration-300 overflow-hidden relative">
                           <div className="flex items-center gap-5 relative z-10">
                             <div className="relative">
-                              <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl text-white shadow-lg border-2 border-transparent" style={{ background: 'var(--primary)' }}>
-                                {partner?.profilePicture ? (
-                                  <img src={partner.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                                ) : (
-                                  partner?.stockSymbol || "?"
-                                )}
-                              </div>
+                              <Avatar userId={partner?.id} name={partner?.name} size={64} />
                               <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2" style={{ background: 'var(--accent-green)', borderColor: 'var(--bg-card)' }}></div>
                             </div>
                             <div>
@@ -114,9 +109,7 @@ export default function MatchesDashboard() {
                     return (
                       <div key={match.id} className="card p-4 flex items-center justify-between" style={{ background: 'var(--bg-input)' }}>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-[var(--text)] border" style={{ borderColor: 'var(--border-strong)' }}>
-                            {partner?.stockSymbol || "?"}
-                          </div>
+                          <Avatar userId={partner?.id} name={partner?.name} size={40} />
                           <div>
                             <p className="font-medium text-[var(--text)]">{partner?.name || "Unknown"}</p>
                             <p className="text-xs text-[var(--text-muted)]">Ended</p>

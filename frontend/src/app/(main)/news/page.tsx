@@ -73,8 +73,8 @@ export default function NewsPage() {
       <div className="max-w-4xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Campus News</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Verify updates and shape the market.</p>
+            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>📰 Campus Tea</h1>
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>drop the scoop, move the market ☕</p>
           </div>
           <div className="flex gap-3 items-center">
             {user && (
