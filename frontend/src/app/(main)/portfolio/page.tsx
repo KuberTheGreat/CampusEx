@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Avatar from "@/components/Avatar";
 
 interface PortfolioItem {
   shares: number;
@@ -109,7 +110,7 @@ export default function PortfolioPage() {
                       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs" style={{ background: "var(--primary)" }}>{p.stockSymbol}</div>
+                          <Avatar userId={p.targetUserId} name={p.name} size={36} />
                           <div><div className="font-bold" style={{ color: "var(--text)" }}>{p.name}</div><div className="text-xs" style={{ color: "var(--text-muted)" }}>{p.stockSymbol}</div></div>
                         </div>
                       </td>
@@ -137,7 +138,7 @@ export default function PortfolioPage() {
           <div className="card p-8 max-w-lg w-full relative animate-fade-in" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setSelectedStock(null)} className="absolute top-4 right-5 text-xl" style={{ color: "var(--text-muted)" }}>✕</button>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg" style={{ background: "var(--primary)" }}>{selectedStock.stockSymbol}</div>
+              <Avatar userId={selectedStock.targetUserId} name={selectedStock.name} size={48} />
               <div>
                 <h2 className="text-xl font-extrabold" style={{ color: "var(--text)" }}>{selectedStock.name}</h2>
                 <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{selectedStock.stockSymbol} · {selectedStock.shares} Shares</p>

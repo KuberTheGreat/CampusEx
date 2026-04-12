@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { jwtDecode } from "jwt-decode";
+import dynamic from "next/dynamic";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 export default function Home() {
   const [step, setStep] = useState(0);
@@ -13,8 +16,15 @@ export default function Home() {
   const [traits, setTraits] = useState("");
   const [stockSymbol, setStockSymbol] = useState("");
   const [ipoDate, setIpoDate] = useState("");
+  const [lottieData, setLottieData] = useState<any>(null);
   const router = useRouter();
   const { login } = useAuth();
+
+  // Load Lottie animation from CDN
+  useEffect(() => {
+    fetch("https://lottie.host/39c556ee-ef1f-4beb-ad61-b41b7efeadaf/kf8hiJfHtQ.json")
+      .then(r => r.json()).then(setLottieData).catch(() => {});
+  }, []);
 
   const handleGoogleLoginSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
@@ -76,20 +86,32 @@ export default function Home() {
       <div className="absolute top-[-15%] left-[-10%] w-[45%] h-[45%] rounded-full opacity-20 animate-float" style={{ background: "var(--primary)", filter: "blur(120px)" }} />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full opacity-15 animate-float" style={{ background: "var(--accent-purple)", filter: "blur(120px)", animationDelay: "2s" }} />
 
-      <main className="z-10 w-full max-w-4xl p-8 flex flex-col items-center">
+      <main className="z-10 w-full max-w-5xl p-8 flex flex-col items-center">
         {step === 0 && (
-          <div className="text-center space-y-6 animate-fade-in">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-white text-3xl font-extrabold" style={{ background: "var(--primary)" }}>Cx</div>
-            <h1 className="text-5xl font-extrabold tracking-tight" style={{ color: "var(--text)" }}>
-              Welcome to <span style={{ color: "var(--primary)" }}>CampusEx</span>
-            </h1>
-            <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-              Transform everyday college life into a dynamic virtual economy.
-              You aren't just a student — you are a tradable asset.
-            </p>
-            <button onClick={() => setStep(1)} className="btn-primary text-lg px-10 py-4 mt-4 animate-pulse-glow">
-              Enter The Market
-            </button>
+          <div className="flex flex-col md:flex-row items-center gap-8 animate-fade-in">
+            {/* Lottie animation */}
+            <div className="w-72 h-72 md:w-80 md:h-80 flex-shrink-0">
+              {lottieData ? (
+                <Lottie animationData={lottieData} loop autoplay style={{ width: "100%", height: "100%" }} />
+              ) : (
+                <div className="w-full h-full rounded-3xl animate-pulse" style={{ background: "var(--bg-card)" }} />
+              )}
+            </div>
+
+            {/* Text + CTA */}
+            <div className="text-center md:text-left space-y-5">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold mb-4" style={{ background: "var(--primary)" }}>Cx</div>
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight" style={{ color: "var(--text)" }}>
+                Welcome to <span style={{ color: "var(--primary)" }}>CampusEx</span>
+              </h1>
+              <p className="text-base max-w-md leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                Transform everyday college life into a dynamic virtual economy.
+                You aren't just a student — you are a tradable asset.
+              </p>
+              <button onClick={() => setStep(1)} className="btn-primary text-lg px-10 py-4 animate-pulse-glow">
+                Enter The Market
+              </button>
+            </div>
           </div>
         )}
 

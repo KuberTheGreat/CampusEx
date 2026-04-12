@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import Avatar from "@/components/Avatar";
 
 export default function ProfilePage() {
   const { id } = useParams();
@@ -69,9 +70,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left: Identity */}
           <div className="card p-8 text-center space-y-5">
-            <div className="w-28 h-28 mx-auto rounded-full flex items-center justify-center font-bold text-3xl text-white" style={{ background: "var(--primary)" }}>
-              {profile.stockSymbol}
-            </div>
+            <Avatar userId={profile.id} name={profile.name} size={112} />
             <div>
               <h1 className="text-2xl font-extrabold" style={{ color: "var(--text)" }}>{profile.name}</h1>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{profile.email}</p>

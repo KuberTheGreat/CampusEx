@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import Avatar from "@/components/Avatar";
 import toast from "react-hot-toast";
 
 type NewsItem = {
@@ -108,9 +109,7 @@ export default function NewsPage() {
                   </div>
 
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm" style={{ background: "var(--primary)" }}>
-                      {news.publisher?.name?.[0] || "?"}
-                    </div>
+                    <Avatar userId={news.id} name={news.publisher?.name} size={40} />
                     <div>
                       <h3 className="font-bold text-sm" style={{ color: "var(--text)" }}>
                         {news.publisher?.name || "Unknown"}{" "}

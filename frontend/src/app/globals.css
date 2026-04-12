@@ -2,50 +2,67 @@
 
 /* ──────────────────────────────────────────
    DESIGN TOKENS — Light Mode (default)
+   Beige/off-white feel — NO harsh whites
    ────────────────────────────────────────── */
 :root {
   --bg: #FFF8EE;
-  --bg-card: #FFFFFF;
-  --bg-hover: #FFF3E0;
-  --bg-input: #FFF5E6;
+  --bg-card: #FFF5E8;
+  --bg-hover: #FFEDD5;
+  --bg-input: #FFF2DC;
   --primary: #FF8C00;
   --primary-hover: #E67E00;
   --primary-soft: #FFF0D4;
   --text: #1A1A1A;
-  --text-secondary: #8A8A8A;
-  --text-muted: #BFBFBF;
-  --border: #F0E6D6;
-  --border-strong: #E0D4C0;
+  --text-secondary: #6B6B6B;
+  --text-muted: #ABABAB;
+  --border: #EEE2CF;
+  --border-strong: #DDD0BA;
   --accent-green: #34C759;
   --accent-red: #FF3B30;
   --accent-blue: #007AFF;
   --accent-purple: #AF52DE;
-  --shadow: rgba(0,0,0,0.06);
-  --shadow-lg: rgba(0,0,0,0.12);
+  --shadow: rgba(0,0,0,0.05);
+  --shadow-lg: rgba(0,0,0,0.10);
+
+  /* Card accent palette — soft pastels */
+  --card-mint: #E8FAF0;
+  --card-lavender: #F0E8FA;
+  --card-peach: #FAEEE8;
+  --card-sky: #E8F0FA;
+  --card-rose: #FAE8EE;
+  --card-lemon: #FAF8E8;
 }
 
 /* ──────────────────────────────────────────
-   DESIGN TOKENS — Dark Mode
+   DESIGN TOKENS — Dark Mode (green/purple tint)
    ────────────────────────────────────────── */
 [data-theme="dark"] {
-  --bg: #141210;
-  --bg-card: #1E1C18;
-  --bg-hover: #2A2620;
-  --bg-input: #252218;
+  --bg: #0F1114;
+  --bg-card: #181B20;
+  --bg-hover: #22262E;
+  --bg-input: #1E2228;
   --primary: #FF9D2E;
   --primary-hover: #FFB04A;
-  --primary-soft: #3A2A10;
-  --text: #F5F0E8;
-  --text-secondary: #9A9088;
-  --text-muted: #5A554D;
-  --border: #2E2A22;
-  --border-strong: #3E382E;
+  --primary-soft: #2E2210;
+  --text: #F0EDE6;
+  --text-secondary: #8A8A90;
+  --text-muted: #55555A;
+  --border: #282C34;
+  --border-strong: #363A44;
   --accent-green: #4ADE80;
   --accent-red: #F87171;
   --accent-blue: #60A5FA;
   --accent-purple: #C084FC;
-  --shadow: rgba(0,0,0,0.3);
-  --shadow-lg: rgba(0,0,0,0.5);
+  --shadow: rgba(0,0,0,0.35);
+  --shadow-lg: rgba(0,0,0,0.55);
+
+  /* Card accent palette — muted dark pastels */
+  --card-mint: #14201A;
+  --card-lavender: #1A1420;
+  --card-peach: #201A14;
+  --card-sky: #141A20;
+  --card-rose: #201418;
+  --card-lemon: #20201A;
 }
 
 @theme {
@@ -72,12 +89,44 @@ body {
   border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: 0 2px 12px var(--shadow);
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
-  box-shadow: 0 4px 20px var(--shadow-lg);
+  box-shadow: 0 6px 24px var(--shadow-lg);
   border-color: var(--border-strong);
+}
+
+/* ──────────────────────────────────────────
+   STOCK CARD — hover-expand animation
+   ────────────────────────────────────────── */
+.stock-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 2px 12px var(--shadow);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.stock-card:hover {
+  box-shadow: 0 8px 32px var(--shadow-lg);
+  border-color: var(--border-strong);
+  transform: translateY(-4px);
+}
+
+.stock-card .card-expand {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, padding 0.3s ease;
+  padding: 0 20px;
+}
+
+.stock-card:hover .card-expand {
+  max-height: 200px;
+  opacity: 1;
+  padding: 0 20px 20px;
 }
 
 /* ──────────────────────────────────────────
