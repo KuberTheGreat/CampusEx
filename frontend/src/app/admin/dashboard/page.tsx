@@ -11,6 +11,13 @@ export default function AdminDashboard() {
   const [editAura, setEditAura] = useState(0);
   const [editCredibility, setEditCredibility] = useState(0);
   const [editPrice, setEditPrice] = useState(0);
+  
+  // Shop Management States
+  const [shopItems, setShopItems] = useState<any[]>([]);
+  const [selectedPerk, setSelectedPerk] = useState<any>(null);
+  const [newPerk, setNewPerk] = useState({
+    name: "", description: "", price: 0, rarity: "Common", requiredScore: 0, effectType: "", imageUrl: "🔮"
+  });
 
   // Price Engine States
   const [engineInterval, setEngineInterval] = useState(60);
@@ -26,6 +33,7 @@ export default function AdminDashboard() {
     }
     fetchUsers();
     fetchEngineStatus();
+    fetchShopItems();
   }, []);
 
   const fetchUsers = async () => {
@@ -115,6 +123,77 @@ export default function AdminDashboard() {
       console.error(e);
     }
   };
+
+  const fetchShopItems = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/shop/items");
+      const data = await res.json();
+      if (res.ok) setShopItems(data || []);
+    } catch(err) { console.error(err); }
+  };
+
+  const createPerk = async () => {
+    const adminData = localStorage.getItem("campusex_admin");
+    if (!adminData) {
+        alert("Session Expired: Please log in again at /admin");
+        return;
+    }
+    const admin = JSON.parse(adminData);
+    
+    try {
+      const res = await fetch("http://localhost:8080/api/admin/shop/items", {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json", 
+            "X-Admin-Email": admin.email || "" 
+        },
+        body: JSON.stringify(newPerk)
+      });
+
+      if (res.ok) {
+        alert("Perk materialised!");
+        setNewPerk({ name: "", description: "", price: 0, rarity: "Common", requiredScore: 0, effectType: "", imageUrl: "🔮" });
+        fetchShopItems();
+      }
+    } catch(e) { console.error(e); }
+  };
+
+  const deletePerk = async (id: number) => {
+    if (!confirm("Terminate this perk permanently?")) return;
+    const adminData = localStorage.getItem("campusex_admin");
+    if (!adminData) return alert("Unauthorized: Please login at /admin");
+    const admin = JSON.parse(adminData);
+
+    try {
+      await fetch(`http://localhost:8080/api/admin/shop/item/${id}`, { 
+          method: "DELETE",
+          headers: { "X-Admin-Email": admin.email || "" }
+      });
+      fetchShopItems();
+    } catch(e) { console.error(e); }
+  };
+
+  const savePerkEdits = async () => {
+    const adminData = localStorage.getItem("campusex_admin");
+    if (!adminData) return alert("Unauthorized: Please login at /admin");
+    const admin = JSON.parse(adminData);
+
+    try {
+        const res = await fetch(`http://localhost:8080/api/admin/shop/item/${selectedPerk.id}`, {
+            method: "PUT",
+            headers: { 
+                "Content-Type": "application/json", 
+                "X-Admin-Email": admin.email || "" 
+            },
+            body: JSON.stringify(selectedPerk)
+        });
+
+        if (res.ok) {
+            setSelectedPerk(null);
+            fetchShopItems();
+        }
+    } catch(e) { console.error(e); }
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-gray-300 p-8 font-mono">
@@ -211,6 +290,58 @@ export default function AdminDashboard() {
         </table>
       </div>
 
+      {/* Shop Management Section */}
+      <div className="mt-12 mb-20">
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-black text-purple-500 tracking-tighter">POWER_SHOP.INVENTORY</h2>
+            <div className="text-[10px] text-gray-600 font-mono">ENFORCE_MARKET_PERKS()</div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Create New Perk */}
+            <div className="lg:col-span-1 bg-black border border-purple-900/30 p-6 rounded-xl space-y-4">
+                <h3 className="text-xs font-bold text-purple-400 tracking-widest uppercase">Forge New Perk</h3>
+                <input type="text" placeholder="Name" value={newPerk.name} onChange={e => setNewPerk({...newPerk, name: e.target.value})} className="w-full bg-black border border-gray-800 p-2 text-sm rounded focus:border-purple-500 outline-none" />
+                <textarea placeholder="Description" value={newPerk.description} onChange={e => setNewPerk({...newPerk, description: e.target.value})} className="w-full bg-black border border-gray-800 p-2 text-sm rounded focus:border-purple-500 outline-none h-20" />
+                <div className="grid grid-cols-2 gap-4">
+                    <input type="number" placeholder="Price" value={newPerk.price} onChange={e => setNewPerk({...newPerk, price: Number(e.target.value)})} className="bg-black border border-gray-800 p-2 text-sm rounded focus:border-purple-500 outline-none" />
+                    <input type="text" placeholder="Effect (SHIELD...)" value={newPerk.effectType} onChange={e => setNewPerk({...newPerk, effectType: e.target.value})} className="bg-black border border-gray-800 p-2 text-sm rounded focus:border-purple-500 outline-none" />
+                </div>
+                <button onClick={createPerk} className="w-full py-3 bg-purple-900/40 border border-purple-500 text-purple-400 font-bold text-xs tracking-widest hover:bg-purple-900/60 transition rounded">CONSTRUCT_PERK</button>
+            </div>
+
+            {/* List Existing Perks */}
+            <div className="lg:col-span-2 bg-[#111] border border-gray-800 rounded-xl overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-black text-[10px] uppercase tracking-widest text-gray-500">
+                        <tr>
+                            <th className="p-4">Item</th>
+                            <th className="p-4">Price</th>
+                            <th className="p-4">Effect</th>
+                            <th className="p-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="text-sm">
+                        {shopItems.map(item => (
+                            <tr key={item.id} className="border-b border-gray-900">
+                                <td className="p-4">
+                                    <div className="font-bold text-gray-200">{item.imageUrl} {item.name}</div>
+                                    <div className="text-[10px] text-gray-500">{item.rarity}</div>
+                                </td>
+                                <td className="p-4 text-amber-500 font-bold">{item.price}</td>
+                                <td className="p-4 text-xs text-gray-500">{item.effectType}</td>
+                                <td className="p-4 text-right space-x-3">
+                                    <button onClick={() => setSelectedPerk(item)} className="text-blue-500 hover:underline">MOD</button>
+                                    <button onClick={() => deletePerk(item.id)} className="text-red-500 font-bold">DEL</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+
       {selectedUser && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#111] border border-red-900/50 p-8 rounded-xl max-w-sm w-full shadow-2xl shadow-red-900/20">
@@ -239,7 +370,47 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      {selectedPerk && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-[#0a0a0a] border border-purple-900/50 p-8 rounded-2xl max-w-md w-full shadow-2xl shadow-purple-900/40">
+            <h2 className="text-xl font-black mb-1 text-purple-500 tracking-tighter uppercase">Modify_Perk.EXE</h2>
+            <p className="text-[10px] text-gray-600 mb-6 font-mono">RECALIBRATING_PERK_PARAMETERS...</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1 tracking-widest uppercase">Perk Name</label>
+                <input type="text" value={selectedPerk.name} onChange={e => setSelectedPerk({...selectedPerk, name: e.target.value})} className="w-full bg-black border border-gray-900 p-3 rounded focus:outline-none focus:border-purple-500 text-gray-100 font-bold" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-[10px] text-gray-500 mb-1 tracking-widest uppercase">Price (Aura)</label>
+                    <input type="number" value={selectedPerk.price} onChange={e => setSelectedPerk({...selectedPerk, price: Number(e.target.value)})} className="w-full bg-black border border-gray-900 p-3 rounded focus:outline-none focus:border-amber-500 text-amber-500 font-bold" />
+                </div>
+                <div>
+                    <label className="block text-[10px] text-gray-500 mb-1 tracking-widest uppercase">Rarity</label>
+                    <select value={selectedPerk.rarity} onChange={e => setSelectedPerk({...selectedPerk, rarity: e.target.value})} className="w-full bg-black border border-gray-900 p-3 rounded focus:outline-none focus:border-purple-500 text-purple-400 font-bold appearance-none">
+                        <option value="Common">Common</option>
+                        <option value="Rare">Rare</option>
+                        <option value="Epic">Epic</option>
+                        <option value="Legendary">Legendary</option>
+                    </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1 tracking-widest uppercase">Description</label>
+                <textarea value={selectedPerk.description} onChange={e => setSelectedPerk({...selectedPerk, description: e.target.value})} className="w-full bg-black border border-gray-900 p-3 rounded focus:outline-none focus:border-purple-500 text-gray-400 text-xs h-20" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setSelectedPerk(null)} className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 rounded text-[10px] font-bold tracking-widest">ABORT</button>
+              <button onClick={savePerkEdits} className="flex-1 py-3 bg-purple-900/80 hover:bg-purple-800 text-white rounded text-[10px] tracking-[0.2em] font-black underline decoration-purple-400 underline-offset-4">EXECUTE_PATCH</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 

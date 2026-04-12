@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ShopItem {
   id: number;
@@ -14,15 +15,35 @@ interface ShopItem {
 }
 
 export default function PowerShop() {
+  const { user, refreshUser } = useAuth();
   const [items, setItems] = useState<ShopItem[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [auraCoins, setAuraCoins] = useState(1000); // Mock value for now
-  const [credibility, setCredibility] = useState(500); // Mock value for now
-  const userId = 5; // Hardcoded user ID for testing
+  const [auraCoins, setAuraCoins] = useState(0);
 
   useEffect(() => {
     fetchItems();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+        setAuraCoins(user.auraCoins || 0);
+        fetchInventory();
+    }
+  }, [user]);
+
+  const fetchInventory = async () => {
+    if (!user?.id) return;
+    try {
+        const res = await fetch(`http://localhost:8080/api/shop/inventory/${user.id}`);
+        if (res.ok) {
+            const data = await res.json();
+            setInventory(data || []);
+        }
+    } catch(e) {
+        console.error("Failed to fetch inventory", e);
+    }
+  };
 
   const fetchItems = async () => {
     try {
@@ -49,12 +70,9 @@ export default function PowerShop() {
   };
 
   const handleBuy = async (item: ShopItem) => {
+    if (!user) return;
     if (auraCoins < item.price) {
       alert("Not enough Aura Coins!");
-      return;
-    }
-    if (credibility < item.requiredScore) {
-      alert(`You need ${item.requiredScore} credibility to buy this.`);
       return;
     }
 
@@ -62,12 +80,12 @@ export default function PowerShop() {
       const res = await fetch(`http://localhost:8080/api/shop/buy/${item.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId: user.id }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setAuraCoins(data.auraCoins);
         alert(`Successfully bought ${item.name}!`);
+        await refreshUser();
+        fetchInventory();
       } else {
         const err = await res.json();
         alert(`Failed: ${err.error}`);
@@ -106,15 +124,6 @@ export default function PowerShop() {
                 <div className="text-xs text-gray-400 uppercase tracking-wider font-bold">Aura Coins</div>
                 <div className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">
                   {auraCoins.toLocaleString()}
-                </div>
-              </div>
-            </div>
-            <div className="glass px-6 py-3 rounded-2xl border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-md flex items-center gap-3">
-              <span className="text-2xl">👑</span>
-              <div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-bold">Credibility</div>
-                <div className="text-xl font-black text-white">
-                  {credibility.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -164,18 +173,11 @@ export default function PowerShop() {
                     </p>
                   </div>
                   
-                  {/* Requirements & Action */}
-                  <div className="mt-auto space-y-4 pt-4 border-t border-white/10">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500 font-medium">Requirement:</span>
-                      <span className={`font-bold ${credibility >= item.requiredScore ? "text-emerald-400" : "text-red-400"}`}>
-                        {item.requiredScore} Cred
-                      </span>
-                    </div>
-
+                  {/* Action */}
+                  <div className="mt-auto pt-4 border-t border-white/10">
                     <button 
                       onClick={() => handleBuy(item)}
-                      disabled={auraCoins < item.price || credibility < item.requiredScore}
+                      disabled={auraCoins < item.price}
                       className="w-full relative group/btn overflow-hidden rounded-xl p-[1px] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="absolute inset-0 bg-gradient-to-r from-purple-500 to-emerald-500 rounded-xl opacity-70 group-hover/btn:opacity-100 transition-opacity duration-300"></span>
@@ -193,7 +195,53 @@ export default function PowerShop() {
             ))}
           </div>
         )}
+
+        {/* My Perks Section */}
+        <div className="pt-12 border-t border-white/5">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h2 className="text-4xl font-black text-white">My Perks</h2>
+                    <p className="text-gray-500 mt-1">Your current arsenal of abilities.</p>
+                </div>
+                <div className="text-xs font-mono text-gray-700 tracking-[0.5em] uppercase">Inventory_v1.0</div>
+            </div>
+
+            {inventory.length === 0 ? (
+                <div className="glass rounded-[32px] p-20 text-center border-2 border-dashed border-white/5">
+                    <div className="text-5xl mb-4">📭</div>
+                    <h3 className="text-xl font-bold text-gray-400">Inventory Empty</h3>
+                    <p className="text-gray-600 max-w-xs mx-auto mt-2">Acquire perks from the shop to see them manifested here.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {Object.values(inventory.reduce((acc: any, inv: any) => {
+                        const id = inv.shopItemId;
+                        if (!acc[id]) {
+                            acc[id] = { ...inv, count: 1 };
+                        } else {
+                            acc[id].count += 1;
+                        }
+                        return acc;
+                    }, {})).map((inv: any) => (
+                        <div key={inv.id} className="glass p-6 rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent hover:border-purple-500/50 transition-colors group relative">
+                           {inv.count > 1 && (
+                               <div className="absolute -top-2 -right-2 bg-purple-600 text-white text-[10px] font-black px-2 py-1 rounded-lg border border-purple-400 shadow-[0_0_10px_rgba(147,51,234,0.5)] z-20">
+                                   x{inv.count}
+                               </div>
+                           )}
+                           <div className="flex items-center justify-between mb-4">
+                               <div className="text-3xl">{inv.Item?.imageUrl || "🔮"}</div>
+                               <div className="px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter bg-purple-500/10 text-purple-400 border border-purple-500/20">Active</div>
+                           </div>
+                           <h4 className="text-lg font-bold text-white">{inv.Item?.name}</h4>
+                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">{inv.Item?.description}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
       </div>
     </div>
   );
 }
+

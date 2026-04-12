@@ -49,7 +49,6 @@ func handleGoogleCallback(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email not found in token"})
 		return
 	}
-
 	// Validate email against the strict regex
 	if !emailRegex.MatchString(email) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Email does not match the allowed college roll format."})
@@ -66,7 +65,7 @@ func handleGoogleCallback(c *gin.Context) {
 			Email: email,
 			Name:  payload.Claims["name"].(string), // Extract Name from Google
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{
 			"message":       "Email verified",
 			"needs_profile": true,
@@ -79,6 +78,13 @@ func handleGoogleCallback(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message":       "Login successful",
 		"needs_profile": user.StockSymbol == "",
-		"user":          user,
+		"user": gin.H{
+			"id":               user.ID,
+			"email":            user.Email,
+			"name":             user.Name,
+			"stockSymbol":      user.StockSymbol,
+			"auraCoins":        user.AuraCoins,
+			"credibilityScore": user.CredibilityScore,
+		},
 	})
 }

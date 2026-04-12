@@ -18,11 +18,13 @@ func RegisterShopRoutes(router *gin.RouterGroup) {
 		shop.GET("/inventory/:userId", getUserInventory)
 	}
 
-	// Secured Admin Shop Routes
-	adminShop := router.Group("/shop/admin")
+	// Centralized Admin Shop Routes
+	adminShop := router.Group("/admin/shop")
 	adminShop.Use(AdminMiddleware())
 	{
 		adminShop.POST("/items", createShopItem)
+		adminShop.PUT("/item/:id", updateShopItem)
+		adminShop.DELETE("/item/:id", deleteShopItem)
 	}
 }
 
@@ -158,3 +160,34 @@ func getUserInventory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, inventory)
 }
+
+func updateShopItem(c *gin.Context) {
+	id := c.Param("id")
+	var item models.ShopItem
+	if err := database.DB.First(&item, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Item not found"})
+		return
+	}
+
+	if err := c.ShouldBindJSON(&item); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := database.DB.Save(&item).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update shop item"})
+		return
+	}
+
+	c.JSON(http.StatusOK, item)
+}
+
+func deleteShopItem(c *gin.Context) {
+	id := c.Param("id")
+	if err := database.DB.Delete(&models.ShopItem{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete shop item"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Item deleted"})
+}
+
