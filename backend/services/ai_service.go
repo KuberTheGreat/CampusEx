@@ -10,153 +10,141 @@ import (
 	"strings"
 )
 
+// AIEvaluation holds the resolved impact for a single student.
 type AIEvaluation struct {
 	Name            string  `json:"name"`
-	ImpactDirection string  `json:"impactDirection"`
+	ImpactDirection string  `json:"impactDirection"` // POSITIVE | NEGATIVE | NEUTRAL
 	Percentage      float64 `json:"percentage"`
 }
 
+// AIImpactAnalysis is the top-level structure returned by AnalyzeNewsImpact.
 type AIImpactAnalysis struct {
 	Evaluations []AIEvaluation `json:"evaluations"`
 }
 
-var promptTemplate = `You are a savage, highly analytical financial algorithm operating a gamified university system where students are traded as volatile "stocks".
-Your ONLY job is to analyze a community-verified piece of news about specific students and determine their precise individual impact on their stock prices based on Campus Culture dynamics.
+// Groq API request / response shapes (OpenAI-compatible).
+type groqMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
 
-REFERENCE GUIDELINES & VOLATILITY BENCHMARKS:
-Remember to scale your impact precisely based on these examples (use them as strict baselines, not rules):
+type groqRequest struct {
+	Model          string        `json:"model"`
+	Messages       []groqMessage `json:"messages"`
+	Temperature    float64       `json:"temperature"`
+	MaxTokens      int           `json:"max_tokens"`
+	ResponseFormat struct {
+		Type string `json:"type"`
+	} `json:"response_format"`
+}
 
-1. Academic & Research (The "Nerd" Metrics)
-- Perfect GPA/Topping the batch: +10% to +15%
-- Failing a major core subject: -10% to -15%
-- Publishing a paper in a top-tier journal (e.g., IEEE): +15% to +20%
-- Publishing in a minor/college magazine: +3% to +5%
-- Getting caught cheating in an exam: -20% to -30% (High penalty)
-- Winning a national-level hackathon: +15% to +20%
-- Winning an intra-college hackathon: +5% to +8%
-- Securing a prestigious academic scholarship: +10% to +15%
-- Creating a highly utilized open-source tool for students: +8% to +12%
-- Getting publicly praised by a strict professor: +4% to +7%
+type groqResponse struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+	Error *struct {
+		Message string `json:"message"`
+		Code    string `json:"code"`
+	} `json:"error,omitempty"`
+}
 
-2. Career & Professional (The "Placement" Drivers)
-- Landing a Tier-1/FAANG internship/PPO: +15% to +35%
-- Landing a mid-level startup internship: +5% to +10%
-- Getting fired/losing an internship due to bad performance: -15% to -25%
-- Starting a successful, revenue-generating campus business: +15% to +20%
-- Starting a scam/failed campus business: -10% to -20%
-- Getting featured in external tech media: +20% to +25%
-- Bagging a massive freelance client: +6% to +10%
-- Getting rejected from a dream company (publicly known): -2% to -5%
+// systemPrompt is a compact (~180 token) calibration guide for the model.
+// Keeping it tight is critical — every token here is paid on EVERY analysis call.
+const systemPrompt = `You are a ruthless financial algorithm for a gamified university stock market.
+Analyze news about students and rate each student's individual stock price impact.
 
-3. Extracurricular & Leadership (The "Fame" Multipliers)
-- Elected Student Council President: +20% to +30%
-- Impeached/Removed from Student Council: -25% to -35%
-- Organizing the main college cultural fest successfully: +12% to +18%
-- Mismanaging or embezzling fest funds: -30% to -40% (Crash)
-- Winning gold in an inter-college sports tournament: +10% to +15%
-- Giving a TEDx or major guest talk: +10% to +15%
-- Bringing a major celebrity/sponsor to campus: +15% to +20%
+VOLATILITY SCALE (use as strict baselines):
+Academic: Top GPA/batch→+10-15%, Research paper (top journal)→+15-20%, Cheating caught→-20-30%, National hackathon win→+15-20%, Intra-college win→+5-8%
+Career: FAANG/Tier-1 offer→+15-35%, Startup (revenue)→+15-20%, Fired/internship lost→-15-25%, Freelance client→+6-10%
+Social/Rep: Viral (cool)→+5-10%, Viral (cringe)→-8-15%, Public fight→-15-25%, Rude to staff→-10-15%, Free-rider exposed→-8-12%
+Leadership: Student council president→+20-30%, Removed from council→-25-35%, Fest organized well→+12-18%, Funds mismanaged→-30-40%
+Dating: Power couple→+8-12%, Cheating exposed→-20-30%, Public breakup→-5-10%
 
-4. Social, Reputation & Personality (The "Gossip" Volatility)
-- Going viral on campus meme pages (cool): +5% to +10%
-- Going viral for cringe/embarrassing reasons: -8% to -15%
-- Getting into a public physical altercation/fight: -15% to -25%
-- Helping someone in a severe medical emergency: +12% to +18%
-- Spreading fake news / Caught lying on resume: -20% to -30%
-- Verified reports of being rude to mess workers/staff: -10% to -15%
-- Notorious "free-rider" in group projects exposed: -8% to -12%
+RULES:
+- Evaluate ONLY students named in the news.
+- Be savage and precise — never round to 5% unless the exact benchmark is 5%.
+- Output ONLY valid JSON, no markdown.`
 
-5. Dating & Bidding Module (The "Aura" Market)
-- Forming a highly visible "Power Couple" with another top stock: +8% to +12%
-- Exposed as cheating on a partner: -20% to -30%
-- Going through a messy public breakup: -5% to -10%
-- Revealing an impressive "Hidden Trait" post-purchase: +5% to +10%
+// userPromptTemplate wraps the raw news content for the user turn.
+const userPromptTemplate = `News: "%s"
 
-News content: "%s"
-
-Analyze the socio-economic friction generated by this news. Output ONLY valid JSON, returning an array of evaluated students identified in the text.
+Return JSON exactly matching this schema — no other keys:
 {
   "evaluations": [
-    {
-      "name": "<student name derived from the text>",
-      "impactDirection": "POSITIVE" | "NEGATIVE" | "NEUTRAL",
-      "percentage": <integer between 1 and 40 for this specific student>
-    }
+    {"name": "<student name>", "impactDirection": "POSITIVE"|"NEGATIVE"|"NEUTRAL", "percentage": <number 1-40>}
   ]
 }`
 
+const (
+	groqModel    = "llama-3.1-8b-instant"
+	groqEndpoint = "https://api.groq.com/openai/v1/chat/completions"
+)
+
+// AnalyzeNewsImpact calls the Groq API and returns per-student stock impact data.
+// It is safe to call concurrently; all state is local to the function.
 func AnalyzeNewsImpact(newsContent string) (*AIImpactAnalysis, error) {
-	apiKey := os.Getenv("GEMINI_API_KEY")
-	if apiKey == "" || apiKey == "your_gemini_api_key_here" {
-		// Mock logic if no API key is provided
-		return &AIImpactAnalysis{Evaluations: []AIEvaluation{}}, fmt.Errorf("GEMINI_API_KEY is not set")
+	apiKey := os.Getenv("GROQ_API_KEY")
+	if apiKey == "" {
+		return &AIImpactAnalysis{Evaluations: []AIEvaluation{}},
+			fmt.Errorf("GROQ_API_KEY is not set — skipping AI analysis")
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=%s", apiKey)
+	userMsg := fmt.Sprintf(userPromptTemplate, strings.ReplaceAll(newsContent, `"`, `\"`))
 
-	prompt := fmt.Sprintf(promptTemplate, strings.ReplaceAll(newsContent, "\"", "\\\""))
+	payload := groqRequest{
+		Model: groqModel,
+		Messages: []groqMessage{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userMsg},
+		},
+		Temperature: 0.1,  // Low temperature → deterministic, consistent scoring
+		MaxTokens:   256,   // Enough for 5 subjects; keeps costs low
+	}
+	payload.ResponseFormat.Type = "json_object" // Guarantees valid JSON — no markdown stripping needed
 
-	requestBody, err := json.Marshal(map[string]interface{}{
-		"contents": []interface{}{
-			map[string]interface{}{
-				"parts": []interface{}{
-					map[string]interface{}{
-						"text": prompt,
-					},
-				},
-			},
-		},
-		"generationConfig": map[string]interface{}{
-			"temperature":      0.1,
-			"responseMimeType": "application/json",
-		},
-	})
+	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal groq request: %w", err)
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest(http.MethodPost, groqEndpoint, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build groq http request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("groq http call failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read groq response body: %w", err)
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("gemini api error: %s", string(body))
+	var groqResp groqResponse
+	if err := json.Unmarshal(rawBody, &groqResp); err != nil {
+		return nil, fmt.Errorf("failed to parse groq response wrapper: %w — raw: %s", err, string(rawBody))
 	}
 
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
+	if groqResp.Error != nil {
+		return nil, fmt.Errorf("groq api error [%s]: %s", groqResp.Error.Code, groqResp.Error.Message)
 	}
 
-	if err := json.Unmarshal(body, &geminiResp); err != nil {
-		return nil, fmt.Errorf("failed to parse gemini response wrapper: %v", err)
+	if len(groqResp.Choices) == 0 || groqResp.Choices[0].Message.Content == "" {
+		return nil, fmt.Errorf("groq returned empty response")
 	}
 
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("empty response from gemini")
-	}
-
-	rawJSON := strings.TrimSpace(geminiResp.Candidates[0].Content.Parts[0].Text)
-	rawJSON = strings.TrimPrefix(rawJSON, "```json")
-	rawJSON = strings.TrimPrefix(rawJSON, "```")
-	rawJSON = strings.TrimSuffix(rawJSON, "```")
-	rawJSON = strings.TrimSpace(rawJSON)
+	rawJSON := strings.TrimSpace(groqResp.Choices[0].Message.Content)
 
 	var analysis AIImpactAnalysis
 	if err := json.Unmarshal([]byte(rawJSON), &analysis); err != nil {
-		return nil, fmt.Errorf("failed to parse analysis JSON: %v. Raw string: %s", err, rawJSON)
+		return nil, fmt.Errorf("failed to parse analysis JSON: %w — raw: %s", err, rawJSON)
 	}
 
 	return &analysis, nil
