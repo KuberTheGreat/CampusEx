@@ -94,6 +94,9 @@ func ConnectDB() {
 			&models.UserInventory{},
 			&models.ProfileAuction{},
 			&models.ProfileBid{},
+			&models.DatingMatch{},
+			&models.ChatMessage{},
+			&models.MatchRating{},
 		)
 		if err != nil {
 			log.Fatal("Migration Failed. \n", err)
@@ -121,6 +124,9 @@ func ConnectDB() {
 				&models.UserInventory{},
 				&models.ProfileAuction{},
 				&models.ProfileBid{},
+				&models.DatingMatch{},
+				&models.ChatMessage{},
+				&models.MatchRating{},
 			)
 			if err != nil {
 				log.Fatal("Migration Failed. \n", err)

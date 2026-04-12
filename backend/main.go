@@ -49,6 +49,7 @@ func main() {
 	routes.RegisterEventRoutes(api)
 	routes.RegisterShopRoutes(api)
 	routes.RegisterProfileBiddingRoutes(api)
+	routes.RegisterDatingRoutes(api)
 
 	port := os.Getenv("PORT")
 	if port == "" {

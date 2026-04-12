@@ -21,6 +21,10 @@ export default function AdminDashboard() {
     name: "", description: "", price: 0, rarity: "Common", requiredScore: 0, effectType: "", imageUrl: "🔮"
   });
 
+  // Auction States
+  const [selectedAuctionUser, setSelectedAuctionUser] = useState<any>(null);
+  const [auctionDuration, setAuctionDuration] = useState(24);
+
   // Price Engine States
   const [engineInterval, setEngineInterval] = useState(60);
   const [newInterval, setNewInterval] = useState(60);
@@ -296,6 +300,35 @@ export default function AdminDashboard() {
     }
   };
 
+  const launchAuction = async () => {
+    if (!selectedAuctionUser) return;
+    try {
+      const startTime = new Date();
+      const endTime = new Date(startTime.getTime() + auctionDuration * 3600 * 1000);
+
+      const res = await fetch("http://localhost:8080/api/profile-bids/admin/auction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetUserId: selectedAuctionUser.id,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString()
+        })
+      });
+
+      if (res.ok) {
+        alert("Profile Auction Launched Successfully!");
+        setSelectedAuctionUser(null);
+      } else {
+        const d = await res.json();
+        alert("Launch failed: " + d.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error reaching server");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-gray-300 p-8 font-mono">
       <header className="flex justify-between items-center mb-12 border-b border-red-900/30 pb-6">
@@ -377,6 +410,7 @@ export default function AdminDashboard() {
                 <td className="p-4 text-right text-emerald-500 font-bold">{u.currentPrice?.toFixed(2)}</td>
                 <td className="p-4 text-right text-purple-400">{u.credibilityScore}</td>
                 <td className="p-4 text-right space-x-3">
+                  <button onClick={() => setSelectedAuctionUser(u)} className="text-xs text-pink-500 hover:text-pink-400 font-bold bg-pink-500/10 px-2 py-1 rounded">AUCTION</button>
                   <button onClick={() => openEditor(u)} className="text-xs text-blue-500 hover:text-blue-400 underline">EDIT</button>
                   <button onClick={() => handeBanUser(u.id, u.name)} className="text-xs text-red-600 hover:text-red-400 font-bold tracking-widest">BAN</button>
                 </td>
@@ -675,6 +709,33 @@ export default function AdminDashboard() {
               <button onClick={savePerkEdits} disabled={savingPerk} className="flex-1 py-3 bg-purple-900/80 hover:bg-purple-800 text-white rounded text-[10px] tracking-[0.2em] font-black underline decoration-purple-400 underline-offset-4 flex items-center justify-center gap-2 disabled:opacity-50">
                 {savingPerk ? <><Loader2 size={12} className="animate-spin" /> PATCHING...</> : "EXECUTE_PATCH"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedAuctionUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111] border border-pink-900/50 p-8 rounded-xl max-w-sm w-full shadow-2xl shadow-pink-900/20">
+            <h2 className="text-xl font-bold mb-4 text-pink-500">INITIATE_AUCTION</h2>
+            <p className="text-xs text-gray-500 mb-6">Target Platform: #{selectedAuctionUser.id} - {selectedAuctionUser.name}</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1 tracking-widest">Duration (Hours)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  value={auctionDuration} 
+                  onChange={e => setAuctionDuration(Number(e.target.value))} 
+                  className="w-full bg-black border border-gray-800 p-3 rounded focus:outline-none focus:border-pink-500 text-pink-500 font-bold" 
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setSelectedAuctionUser(null)} className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm font-bold">CANCEL</button>
+              <button onClick={launchAuction} className="flex-1 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded text-sm tracking-widest font-bold">LAUNCH</button>
             </div>
           </div>
         </div>

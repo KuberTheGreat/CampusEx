@@ -40,6 +40,10 @@ export default function ProfileAuctionDetails() {
 
   const highestBid = bids.length > 0 ? bids[0].amount : 0;
   const isTargetUser = user?.id && auction?.targetUserId === user.id;
+  const userExistingBid = bids.find(b => b.bidder?.id === user?.id && b.status === "PENDING");
+  
+  const topBids = bids.slice(0, 4);
+  const activePendingBidIndex = topBids.findIndex(b => b.status === "PENDING");
 
   const placeBid = async () => {
     if (!user) return alert("Log in first");
@@ -133,34 +137,42 @@ export default function ProfileAuctionDetails() {
               <span className="text-2xl font-bold text-pink-400">{highestBid} Au</span>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Your Bid (AURA)</label>
-                <input 
-                  type="number" 
-                  min={highestBid + 1}
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(Number(e.target.value))}
-                  className="w-full bg-black border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
-                />
+            {userExistingBid ? (
+              <div className="bg-emerald-900/20 border border-emerald-500/30 p-4 rounded-xl text-center text-emerald-400">
+                <CheckCircle className="mx-auto mb-2" size={32} />
+                <h3 className="font-bold text-lg mb-1">Bid Logged Successfully!</h3>
+                <p className="text-sm text-emerald-500/80">You have a pending bid of {userExistingBid.amount} Au. Wait for the auction to end!</p>
               </div>
-              <div>
-                <label className="text-sm text-gray-400 block mb-2">Secret Message (sent to target)</label>
-                <textarea 
-                  rows={2}
-                  value={bidMessage}
-                  onChange={(e) => setBidMessage(e.target.value)}
-                  placeholder="Why should they pick you?"
-                  className="w-full bg-black border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
-                />
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Your Bid (AURA)</label>
+                  <input 
+                    type="number" 
+                    min={highestBid + 1}
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(Number(e.target.value))}
+                    className="w-full bg-black border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Secret Message (sent to target)</label>
+                  <textarea 
+                    rows={2}
+                    value={bidMessage}
+                    onChange={(e) => setBidMessage(e.target.value)}
+                    placeholder="Why should they pick you?"
+                    className="w-full bg-black border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-pink-500 transition-colors"
+                  />
+                </div>
+                <button 
+                  onClick={placeBid}
+                  className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-xl transition-all"
+                >
+                  Submit Bid
+                </button>
               </div>
-              <button 
-                onClick={placeBid}
-                className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-xl transition-all"
-              >
-                Submit Bid
-              </button>
-            </div>
+            )}
           </div>
         )}
 
@@ -175,44 +187,50 @@ export default function ProfileAuctionDetails() {
             )}
             
             <div className="space-y-4">
-              {bids.map((bid, index) => (
-                <div key={bid.id} className={`p-5 rounded-2xl border ${bid.status === "PENDING" && auction.status === "RESOLVING" ? "border-pink-500/50 bg-black/60" : "border-gray-800 bg-black/40"}`}>
-                   <div className="flex justify-between items-start mb-3">
-                     <span className="font-bold text-lg">#{index + 1} - {bid.bidder?.name}</span>
-                     <span className="font-bold text-xl text-emerald-400">{bid.amount} Au</span>
-                   </div>
-                   {bid.message && (
-                     <div className="bg-gray-900 p-3 rounded-lg text-sm text-gray-300 italic flex gap-2 items-start mb-4">
-                       <MessagesSquare size={16} className="mt-0.5 text-gray-500 shrink-0" />
-                       "{bid.message}"
-                     </div>
-                   )}
-                   
-                   {/* Actions for resolving */}
-                   {auction.status === "RESOLVING" && bid.status === "PENDING" && index === 0 && (
-                     <div className="flex gap-3 mt-4">
-                       <button onClick={() => resolveAuction(bid.id, "ACCEPT")} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2">
-                          <CheckCircle size={18} /> Accept Bidder
-                       </button>
-                       {auction.rejectionsLeft > 0 ? (
-                         <button onClick={() => resolveAuction(bid.id, "REJECT")} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2">
-                            <XCircle size={18} /> Reject ({auction.rejectionsLeft} left)
-                         </button>
-                       ) : (
-                         <div className="text-red-500 text-sm mt-2 text-center w-full">Final bidder! No rejections left.</div>
-                       )}
-                     </div>
-                   )}
-
-                   {bid.status !== "PENDING" && (
-                     <div className={`mt-2 text-sm font-bold ${bid.status === "ACCEPTED" ? "text-emerald-500" : "text-gray-500"}`}>
-                       Status: {bid.status}
-                     </div>
-                   )}
+              {auction.status === "ACTIVE" ? (
+                <div className="opacity-50 text-center py-10 border border-dashed border-gray-800 rounded-2xl">
+                  Profiles and secret messages are kept completely hidden from you until the timer runs out.
                 </div>
-              ))}
-              {bids.length === 0 && (
-                <div className="text-gray-500 italic">No bids yet.</div>
+              ) : (
+                topBids.map((bid, index) => (
+                  <div key={bid.id} className={`p-5 rounded-2xl border ${bid.status === "PENDING" && auction.status === "RESOLVING" ? "border-pink-500/50 bg-black/60 shadow-[0_0_15px_rgba(236,72,153,0.3)]" : "border-gray-800 bg-black/40"}`}>
+                     <div className="flex justify-between items-start mb-3">
+                       <span className="font-bold text-lg">#{index + 1} - {bid.bidder?.name}</span>
+                       <span className="font-bold text-xl text-emerald-400">{bid.amount} Au</span>
+                     </div>
+                     {bid.message && (
+                       <div className="bg-gray-900 p-3 rounded-lg text-sm text-gray-300 italic flex gap-2 items-start mb-4">
+                         <MessagesSquare size={16} className="mt-0.5 text-gray-500 shrink-0" />
+                         "{bid.message}"
+                       </div>
+                     )}
+                     
+                     {/* Actions for resolving */}
+                     {auction.status === "RESOLVING" && bid.status === "PENDING" && index === activePendingBidIndex && (
+                       <div className="flex gap-3 mt-4">
+                         <button onClick={() => resolveAuction(bid.id, "ACCEPT")} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition">
+                            <CheckCircle size={18} /> Accept Match
+                         </button>
+                         {auction.rejectionsLeft > 0 && index < topBids.length - 1 ? (
+                           <button onClick={() => resolveAuction(bid.id, "REJECT")} className="flex-1 bg-red-600 hover:bg-red-500 text-white py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition">
+                              <XCircle size={18} /> Reject ({auction.rejectionsLeft} left)
+                           </button>
+                         ) : (
+                           <div className="text-red-500 text-sm mt-2 font-bold bg-red-900/20 px-3 py-2 rounded text-center w-full">Final eligible bidder. You cannot reject!</div>
+                         )}
+                       </div>
+                     )}
+  
+                     {bid.status !== "PENDING" && (
+                       <div className={`mt-2 text-sm font-bold ${bid.status === "ACCEPTED" ? "text-emerald-500" : "text-gray-500"}`}>
+                         Status: {bid.status}
+                       </div>
+                     )}
+                  </div>
+                ))
+              )}
+              {auction.status !== "ACTIVE" && topBids.length === 0 && (
+                <div className="text-gray-500 italic">No bids were placed on you.</div>
               )}
             </div>
           </div>

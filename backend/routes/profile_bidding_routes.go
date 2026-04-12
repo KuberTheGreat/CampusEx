@@ -52,7 +52,7 @@ func createProfileAuction(c *gin.Context) {
 
 func getActiveProfileAuctions(c *gin.Context) {
 	var auctions []models.ProfileAuction
-	if err := database.DB.Preload("TargetUser").Where("status = ?", "ACTIVE").Find(&auctions).Error; err != nil {
+	if err := database.DB.Preload("TargetUser").Where("status IN ?", []string{"ACTIVE", "RESOLVING"}).Find(&auctions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch active auctions"})
 		return
 	}
@@ -115,8 +115,14 @@ func placeProfileBid(c *gin.Context) {
 			return err
 		}
 
+		// One bid per person per auction — prevent duplicate bids
+		var existingBid models.ProfileBid
+		if err := tx.Where("auction_id = ? AND bidder_id = ? AND status = ?", auction.ID, bidder.ID, "PENDING").First(&existingBid).Error; err == nil {
+			return gin.Error{Err: gorm.ErrDuplicatedKey, Type: gin.ErrorTypePrivate, Meta: "DUPLICATE_BID"} // Already has a pending bid
+		}
+
 		if bidder.AuraCoins < input.Amount {
-			return gin.Error{Err: gorm.ErrInvalidData, Type: gin.ErrorTypePrivate} // Insufficient funds
+			return gin.Error{Err: gorm.ErrInvalidData, Type: gin.ErrorTypePrivate, Meta: "INSUFFICIENT_FUNDS"} // Insufficient funds
 		}
 
 		// Deduct coins immediately
@@ -137,7 +143,17 @@ func placeProfileBid(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to place bid. Ensure auction is active and you have enough coins."})
+		if ginErr, ok := err.(*gin.Error); ok {
+			if ginErr.Meta == "DUPLICATE_BID" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "You have already placed an active bid on this auction!"})
+				return
+			}
+			if ginErr.Meta == "INSUFFICIENT_FUNDS" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Insufficient Aura Coins to place this bid."})
+				return
+			}
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to place bid. Ensure auction is active."})
 		return
 	}
 
@@ -186,8 +202,23 @@ func resolveProfileAuction(c *gin.Context) {
 			bid.Status = "ACCEPTED"
 			auction.AcceptedBidderID = &bid.BidderID
 			auction.Status = "COMPLETED"
-			tx.Save(&bid)
-			tx.Save(&auction)
+			if err := tx.Save(&bid).Error; err != nil {
+				return err
+			}
+			if err := tx.Save(&auction).Error; err != nil {
+				return err
+			}
+
+			// Create a DatingMatch linking the target and the accepted bidder
+			match := models.DatingMatch{
+				AuctionID: auction.ID,
+				User1ID:   auction.TargetUserID,
+				User2ID:   bid.BidderID,
+				Status:    "ACTIVE",
+			}
+			if err := tx.Create(&match).Error; err != nil {
+				return err
+			}
 
 			// Refund all other pending bids
 			var remainingBids []models.ProfileBid
@@ -203,7 +234,9 @@ func resolveProfileAuction(c *gin.Context) {
 			}
 		} else if input.Action == "REJECT" {
 			bid.Status = "REJECTED"
-			tx.Save(&bid)
+			if err := tx.Save(&bid).Error; err != nil {
+				return err
+			}
 
 			// Refund this specific bid
 			var bidder models.User
@@ -240,14 +273,16 @@ func resolveProfileAuction(c *gin.Context) {
 					}
 				}
 			}
-			tx.Save(&auction)
+			if err := tx.Save(&auction).Error; err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to resolve auction"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to resolve auction: " + err.Error()})
 		return
 	}
 

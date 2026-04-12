@@ -68,15 +68,19 @@ export default function ProfileBiddingDashboard() {
                     </div>
                     <div>
                       <h2 className="text-xl font-bold text-white">{target?.name || "Unknown"}</h2>
-                      <p className="text-gray-400 flex items-center gap-1 text-sm bg-black/40 px-2 py-1 rounded-md mt-1 w-fit">
-                        <Clock size={12} className="text-pink-400" /> Ends: {new Date(auction.endTime).toLocaleTimeString()}
+                      <p className={`flex items-center gap-1 text-sm bg-black/40 px-2 py-1 rounded-md mt-1 w-fit ${auction.status === 'RESOLVING' ? 'text-orange-400' : 'text-gray-400'}`}>
+                        {auction.status === 'ACTIVE' ? (
+                          <><Clock size={12} className="text-pink-400" /> Ends: {new Date(auction.endTime).toLocaleTimeString()}</>
+                        ) : (
+                          <><AlertCircle size={12} className="text-orange-400" /> Auction Over - Target Deciding...</>
+                        )}
                       </p>
                     </div>
                   </div>
 
                   <Link href={`/profile-bidding/${auction.id}`}>
                     <button className="w-full py-3 rounded-xl bg-pink-600/20 hover:bg-pink-600 text-pink-400 hover:text-white border border-pink-500/50 hover:border-pink-500 font-bold transition-all flex items-center justify-center gap-2 relative z-10">
-                      <Gavel size={18} /> Enter Auction <ArrowRight size={16} />
+                      <Gavel size={18} /> {auction.status === 'ACTIVE' ? 'Enter Auction' : 'View Resolution'} <ArrowRight size={16} />
                     </button>
                   </Link>
                 </div>
