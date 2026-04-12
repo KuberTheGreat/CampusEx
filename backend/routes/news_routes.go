@@ -65,6 +65,10 @@ func getNews(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch news"})
 		return
 	}
+	for i := range newsList {
+		newsList[i].Publisher.Name = "Anonymous Scholar" // Or whatever title you want
+		// The credibility score stays intact!
+	}
 
 	c.JSON(http.StatusOK, gin.H{"news": newsList})
 }
