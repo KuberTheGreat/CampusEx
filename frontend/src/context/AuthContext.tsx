@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const parsed = JSON.parse(storedUser);
       setUser(parsed);
       // Background refresh immediately
-      fetch(`http://localhost:8080/api/user/profile/${parsed.id}`)
+      fetch(`/api/user/profile/${parsed.id}`)
         .then(res => res.json())
         .then(data => {
             if (data.user) {
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshUser = async () => {
     if (user?.id) {
       try {
-        const res = await fetch(`http://localhost:8080/api/user/profile/${user.id}`);
+        const res = await fetch(`/api/user/profile/${user.id}`);
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
