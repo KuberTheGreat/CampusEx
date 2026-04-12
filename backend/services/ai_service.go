@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -104,6 +105,10 @@ func AnalyzeNewsImpact(newsContent string) (*AIImpactAnalysis, error) {
 	}
 	payload.ResponseFormat.Type = "json_object" // Guarantees valid JSON — no markdown stripping needed
 
+	// ── Debug: show exactly what we're sending to Groq ──────────────────────
+	log.Printf("[AI] Prompt → system(%d chars) user(%d chars)\nUSER MSG:\n%s\n",
+		len(systemPrompt), len(userMsg), userMsg)
+
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal groq request: %w", err)
@@ -141,6 +146,9 @@ func AnalyzeNewsImpact(newsContent string) (*AIImpactAnalysis, error) {
 	}
 
 	rawJSON := strings.TrimSpace(groqResp.Choices[0].Message.Content)
+
+	// ── Debug: show exactly what Groq returned ───────────────────────────────
+	log.Printf("[AI] Raw Groq response:\n%s\n", rawJSON)
 
 	var analysis AIImpactAnalysis
 	if err := json.Unmarshal([]byte(rawJSON), &analysis); err != nil {
