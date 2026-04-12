@@ -16,8 +16,13 @@ func RegisterShopRoutes(router *gin.RouterGroup) {
 		shop.GET("/items", getShopItems)
 		shop.POST("/buy/:id", buyShopItem)
 		shop.GET("/inventory/:userId", getUserInventory)
-		// Admin route could be added here if needed, keeping it simple for now
-		shop.POST("/admin/items", createShopItem)
+	}
+
+	// Secured Admin Shop Routes
+	adminShop := router.Group("/shop/admin")
+	adminShop.Use(AdminMiddleware())
+	{
+		adminShop.POST("/items", createShopItem)
 	}
 }
 
