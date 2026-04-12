@@ -39,7 +39,11 @@ func resolvePendingNews() {
 
 func processNewsResolution(news models.News) error {
 	// Re-fetch to ensure we have the latest and associations
-	if err := database.DB.Preload("Publisher").Preload("Subject").First(&news, news.ID).Error; err != nil {
+	q := database.DB.Preload("Publisher")
+	if news.SubjectID != nil {
+		q = q.Preload("Subject")
+	}
+	if err := q.First(&news, news.ID).Error; err != nil {
 		return err
 	}
 
@@ -77,10 +81,10 @@ func processNewsResolution(news models.News) error {
 			news.FinalImpactDir = aiResp.ImpactDirection
 			news.FinalImpactPct = aiResp.Percentage
 
-			// Apply impact to Subject
-			if aiResp.Percentage > 0 && aiResp.ImpactDirection != "NEUTRAL" {
+			// Apply impact to Subject (only if subject exists)
+			if news.SubjectID != nil && aiResp.Percentage > 0 && aiResp.ImpactDirection != "NEUTRAL" {
 				var subject models.User
-				if err := tx.First(&subject, news.SubjectID).Error; err == nil {
+				if err := tx.First(&subject, *news.SubjectID).Error; err == nil {
 					modifier := 1.0 + (aiResp.Percentage / 100.0)
 					if aiResp.ImpactDirection == "NEGATIVE" {
 						modifier = 1.0 - (aiResp.Percentage / 100.0)

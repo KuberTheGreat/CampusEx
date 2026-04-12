@@ -20,7 +20,7 @@ func RegisterNewsRoutes(router *gin.RouterGroup) {
 
 type CreateNewsInput struct {
 	PublisherID uint   `json:"publisherId" binding:"required"`
-	SubjectID   uint   `json:"subjectId" binding:"required"`
+	SubjectID   *uint  `json:"subjectId"` // Optional now
 	Content     string `json:"content" binding:"required"`
 }
 
@@ -36,7 +36,7 @@ func createNews(c *gin.Context) {
 		SubjectID:   input.SubjectID,
 		Content:     input.Content,
 		Status:      "PENDING",
-		EndsAt:      time.Now().Add(5 * time.Minute), // Closes in 5 mins for testing (normally 6 hours)
+		EndsAt:      time.Now().Add(5 * time.Minute),
 	}
 
 	if err := database.DB.Create(&news).Error; err != nil {
@@ -45,7 +45,11 @@ func createNews(c *gin.Context) {
 	}
 
 	// Fetch related user details for a rich response
-	database.DB.Preload("Publisher").Preload("Subject").First(&news, news.ID)
+	q := database.DB.Preload("Publisher")
+	if news.SubjectID != nil {
+		q = q.Preload("Subject")
+	}
+	q.First(&news, news.ID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "News created successfully",
@@ -55,7 +59,7 @@ func createNews(c *gin.Context) {
 
 func getNews(c *gin.Context) {
 	var newsList []models.News
-	if err := database.DB.Preload("Publisher").Preload("Subject").Order("created_at desc").Find(&newsList).Error; err != nil {
+	if err := database.DB.Preload("Publisher").Order("created_at desc").Find(&newsList).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch news"})
 		return
 	}
