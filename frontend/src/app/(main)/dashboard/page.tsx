@@ -33,14 +33,10 @@ export default function Dashboard() {
   const executeTrade = async () => {
     if (!user?.id || !selectedUser || !tradeMode) return;
     const totalCost = tradeShares * selectedUser.currentPrice;
-<<<<<<< HEAD
-    if (tradeMode === "BUY" && totalCost > (user.auraCoins || 0)) return alert("Insufficient AURA balance!");
-=======
     
     if (tradeMode === "BUY" && totalCost > (user.auraCoins || 0)) {
        return toast.error("Insufficient AURA balance!");
     }
->>>>>>> 59b92c8 (replace neon with supabse)
 
     setExecutingTrade(true);
     try {
@@ -50,29 +46,20 @@ export default function Dashboard() {
         body: JSON.stringify({ buyerId: user.id, targetUserId: selectedUser.id, shares: tradeShares, type: tradeMode })
       });
       if (res.ok) {
-<<<<<<< HEAD
-        alert(`${tradeMode} of ${tradeShares} shares of ${selectedUser.stockSymbol} executed!`);
-        window.location.reload();
-=======
         toast.success(`${tradeMode} of ${tradeShares} shares of ${selectedUser.stockSymbol} executed!`, { duration: 4000 });
         setSelectedUser(null);
         setTradeMode(null);
         window.location.reload(); 
->>>>>>> 59b92c8 (replace neon with supabse)
       } else {
         const error = await res.json();
         toast.error(`Trade Failed: ${error.error}`);
       }
-<<<<<<< HEAD
-    } catch(err) { console.error(err); }
-=======
     } catch(err) {
       console.error(err);
       toast.error("Network error. Please try again.");
     } finally {
       setExecutingTrade(false);
     }
->>>>>>> 59b92c8 (replace neon with supabse)
   };
 
   const fetchPriceHistory = async (userId: number, range: string) => {
@@ -244,17 +231,11 @@ export default function Dashboard() {
                     {(tradeShares * selectedUser.currentPrice).toFixed(2)} Au
                   </span>
                 </div>
-<<<<<<< HEAD
-                <div className="flex gap-3">
-                  <button onClick={() => { setTradeMode(null); setTradeShares(1); }} className="btn-secondary flex-1">Cancel</button>
-                  <button onClick={executeTrade} disabled={tradeMode === "BUY" && (tradeShares * selectedUser.currentPrice) > (user?.auraCoins || 0)} className="btn-primary flex-1 disabled:opacity-40">Confirm {tradeMode}</button>
-=======
                 <div className="flex gap-4">
                   <button onClick={() => {setTradeMode(null); setTradeShares(1);}} disabled={executingTrade} className="flex-1 bg-gray-800 p-4 rounded-xl font-bold hover:bg-gray-700 transition disabled:opacity-50">Cancel</button>
                   <button onClick={executeTrade} disabled={executingTrade || (tradeMode === "BUY" && (tradeShares * selectedUser.currentPrice) > (user?.auraCoins || 0))} className="flex-1 bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     {executingTrade ? <><Loader2 size={18} className="animate-spin" /> Executing...</> : `Confirm ${tradeMode}`}
                   </button>
->>>>>>> 59b92c8 (replace neon with supabse)
                 </div>
               </div>
             ) : (
