@@ -92,7 +92,9 @@ func AnalyzeNewsImpact(newsContent string) (*AIImpactAnalysis, error) {
 			fmt.Errorf("GROQ_API_KEY is not set — skipping AI analysis")
 	}
 
-	userMsg := fmt.Sprintf(userPromptTemplate, strings.ReplaceAll(newsContent, `"`, `\"`))
+	// Strip @ mentions from content so AI sees clean names ("Kuber" not "@Kuber")
+	cleanContent := strings.ReplaceAll(newsContent, "@", "")
+	userMsg := fmt.Sprintf(userPromptTemplate, strings.ReplaceAll(cleanContent, `"`, `\"`))
 
 	payload := groqRequest{
 		Model: groqModel,
