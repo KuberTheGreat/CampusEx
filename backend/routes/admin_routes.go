@@ -5,6 +5,7 @@ import (
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
+	"github.com/CampusEx/backend/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,6 +17,10 @@ func RegisterAdminRoutes(router *gin.RouterGroup) {
 		admin.GET("/users", getAllUsers)
 		admin.POST("/user/:id/update", updateUserParams)
 		admin.DELETE("/user/:id/ban", banUser)
+
+		// Price Engine Controls
+		admin.GET("/price-engine/status", getPriceEngineStatus)
+		admin.POST("/price-engine/interval", setPriceEngineInterval)
 	}
 }
 
@@ -94,4 +99,24 @@ func banUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User successfully banned from the market"})
+}
+
+func getPriceEngineStatus(c *gin.Context) {
+	interval := services.GetPriceEngineInterval()
+	c.JSON(http.StatusOK, gin.H{"intervalSeconds": interval})
+}
+
+type IntervalInput struct {
+	Seconds int `json:"seconds" binding:"required,gt=0"`
+}
+
+func setPriceEngineInterval(c *gin.Context) {
+	var input IntervalInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid interval value"})
+		return
+	}
+
+	services.SetPriceEngineInterval(input.Seconds)
+	c.JSON(http.StatusOK, gin.H{"message": "Price engine interval updated", "intervalSeconds": input.Seconds})
 }

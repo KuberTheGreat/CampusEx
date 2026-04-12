@@ -40,3 +40,11 @@ type PriceHistory struct {
 	Price      float64   `json:"price"`
 	RecordedAt time.Time `gorm:"index" json:"recordedAt"`
 }
+
+type DailyStats struct {
+	ID          uint   `gorm:"primaryKey" json:"id"`
+	StockUserID uint   `gorm:"index;uniqueIndex:idx_stock_date" json:"stockUserId"`
+	Date        string `gorm:"uniqueIndex:idx_stock_date" json:"date"` // "2026-04-12"
+	BuyVolume   int    `gorm:"default:0" json:"buyVolume"`
+	SellVolume  int    `gorm:"default:0" json:"sellVolume"`
+}

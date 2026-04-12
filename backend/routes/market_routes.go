@@ -1,13 +1,14 @@
 package routes
 
 import (
-	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func RegisterMarketRoutes(router *gin.RouterGroup) {
@@ -15,12 +16,12 @@ func RegisterMarketRoutes(router *gin.RouterGroup) {
 	{
 		market.GET("/leaderboard", getLeaderboard)
 		market.POST("/trade", executeTrade)
-		market.POST("/test-tick", testTick)
+		market.GET("/stocks", getAllStocks)
+		market.GET("/stocks/:userId/history", getStockHistory)
 	}
 }
 
 func getLeaderboard(c *gin.Context) {
-	// Query params: filterBy, sortBy (price, popularity, recent)
 	sortBy := c.DefaultQuery("sort", "price")
 	year := c.Query("year")
 	trait := c.Query("trait")
@@ -28,12 +29,10 @@ func getLeaderboard(c *gin.Context) {
 	db := database.DB.Model(&models.User{}).Where("is_listed = ?", true)
 
 	if year != "" {
-		// E.g. email LIKE '%2024%'
 		db = db.Where("email LIKE ?", "%"+year+"%")
 	}
 
 	if trait != "" {
-		// Join with traits table implicitly
 		db = db.Joins("JOIN traits ON traits.user_id = users.id").
 			Where("traits.name ILIKE ? AND traits.is_hidden = ?", "%"+trait+"%", false)
 	}
@@ -57,10 +56,10 @@ func getLeaderboard(c *gin.Context) {
 }
 
 type TradeRequest struct {
-	BuyerID      uint    `json:"buyerId"`
-	TargetUserID uint    `json:"targetUserId"`
-	Shares       int     `json:"shares"`
-	Type         string  `json:"type"` // "BUY" or "SELL"
+	BuyerID      uint   `json:"buyerId"`
+	TargetUserID uint   `json:"targetUserId"`
+	Shares       int    `json:"shares"`
+	Type         string `json:"type"` // "BUY" or "SELL"
 }
 
 func executeTrade(c *gin.Context) {
@@ -92,6 +91,7 @@ func executeTrade(c *gin.Context) {
 	}
 
 	totalValue := float64(req.Shares) * target.CurrentPrice
+	today := time.Now().UTC().Format("2006-01-02")
 
 	if req.Type == "BUY" {
 		if buyer.AuraCoins < totalValue {
@@ -102,7 +102,7 @@ func executeTrade(c *gin.Context) {
 		buyer.AuraCoins -= totalValue
 		target.TotalVolume += req.Shares
 
-		// Add to portfolio
+		// Portfolio upsert
 		var portfolio models.Portfolio
 		err := tx.Where("owner_id = ? AND stock_user_id = ?", buyer.ID, target.ID).First(&portfolio).Error
 		if err != nil {
@@ -114,12 +114,22 @@ func executeTrade(c *gin.Context) {
 			}
 			tx.Create(&portfolio)
 		} else {
-			// Update average price
 			totalCost := (float64(portfolio.SharesOwned) * portfolio.AveragePrice) + totalValue
 			portfolio.SharesOwned += req.Shares
 			portfolio.AveragePrice = totalCost / float64(portfolio.SharesOwned)
 			tx.Save(&portfolio)
 		}
+
+		// Upsert daily buy volume
+		tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "stock_user_id"}, {Name: "date"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{"buy_volume": gorm.Expr("daily_stats.buy_volume + ?", req.Shares)}),
+		}).Create(&models.DailyStats{
+			StockUserID: target.ID,
+			Date:        today,
+			BuyVolume:   req.Shares,
+			SellVolume:  0,
+		})
 
 	} else if req.Type == "SELL" {
 		var portfolio models.Portfolio
@@ -139,13 +149,25 @@ func executeTrade(c *gin.Context) {
 		} else {
 			tx.Save(&portfolio)
 		}
+
+		// Upsert daily sell volume
+		tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "stock_user_id"}, {Name: "date"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{"sell_volume": gorm.Expr("daily_stats.sell_volume + ?", req.Shares)}),
+		}).Create(&models.DailyStats{
+			StockUserID: target.ID,
+			Date:        today,
+			BuyVolume:   0,
+			SellVolume:  req.Shares,
+		})
+
 	} else {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid trade type"})
 		return
 	}
 
-	// Record transaction
+	// Record transaction — price does NOT change here
 	trade := models.Transaction{
 		BuyerID:        buyer.ID,
 		TargetUserID:   target.ID,
@@ -162,26 +184,38 @@ func executeTrade(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Trade successful", "newBalance": buyer.AuraCoins})
 }
 
-func testTick(c *gin.Context) {
-	// A simple endpoint to instantly update stock prices randomly to simulate market forces
+// getAllStocks returns all listed users with current prices
+func getAllStocks(c *gin.Context) {
 	var users []models.User
-	database.DB.Where("is_listed = ?", true).Find(&users)
+	if err := database.DB.Where("is_listed = ?", true).Order("current_price DESC").Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stocks"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"stocks": users})
+}
 
-	for _, u := range users {
-		// Random volatility between -5% to +5%
-		changePercent := (rand.Float64() * 0.1) - 0.05
-		u.CurrentPrice = u.CurrentPrice * (1.0 + changePercent)
-		
-		database.DB.Save(&u)
+// getStockHistory returns price history for a specific user
+func getStockHistory(c *gin.Context) {
+	userId := c.Param("userId")
+	rangeParam := c.DefaultQuery("range", "7d")
 
-		// Record history
-		history := models.PriceHistory{
-			UserID:     u.ID,
-			Price:      u.CurrentPrice,
-			RecordedAt: time.Now(),
-		}
-		database.DB.Create(&history)
+	var since time.Time
+	switch rangeParam {
+	case "24h":
+		since = time.Now().UTC().Add(-24 * time.Hour)
+	case "30d":
+		since = time.Now().UTC().Add(-30 * 24 * time.Hour)
+	default: // 7d
+		since = time.Now().UTC().Add(-7 * 24 * time.Hour)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Market prices updated tick"})
+	var history []models.PriceHistory
+	if err := database.DB.Where("user_id = ? AND recorded_at >= ?", userId, since).
+		Order("recorded_at ASC").
+		Find(&history).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch price history"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"history": history})
 }

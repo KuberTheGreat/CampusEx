@@ -120,6 +120,7 @@ export default function ThreeMarket() {
   // Trade States
   const [tradeShares, setTradeShares] = useState(1);
   const [tradeMode, setTradeMode] = useState<"BUY"|"SELL"|null>(null);
+  const [chartData, setChartData] = useState<number[]>([]);
 
   useEffect(() => {
     fetchUsers();
@@ -138,6 +139,22 @@ export default function ThreeMarket() {
       console.error("Failed to fetch market data", err);
     }
   };
+
+  // Fetch price history when a user is selected
+  useEffect(() => {
+    if (selectedUser?.id) {
+      fetch(`http://localhost:8080/api/market/stocks/${selectedUser.id}/history?range=7d`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.history && data.history.length > 0) {
+            setChartData(data.history.map((h: any) => h.price));
+          } else {
+            setChartData([]);
+          }
+        })
+        .catch(() => setChartData([]));
+    }
+  }, [selectedUser?.id]);
 
   const executeTrade = async () => {
     if (!authUser?.id || !selectedUser || !tradeMode) return;
@@ -215,12 +232,20 @@ export default function ThreeMarket() {
               </div>
             </div>
 
-            {/* Dummy Mock Chart */}
+            {/* Live Price Chart */}
             <div className="bg-black/40 border border-[#00aaaa]/30 p-4 rounded-xl mb-8 h-32 flex items-end gap-1 overflow-hidden relative">
               <div className="absolute top-2 right-2 text-[10px] text-[#00aaaa]">7D TREND</div>
-              {[10, 14, 18, 12, 24, 28, 22].map((h, idx) => (
-                <div key={idx} className="flex-1 bg-gradient-to-t from-[#00aaaa]/20 to-[#00ffff] rounded-t-sm" style={{ height: `${h * 3}px` }} />
-              ))}
+              {chartData.length >= 2 ? (
+                chartData.map((price, idx) => {
+                  const maxP = Math.max(...chartData);
+                  const minP = Math.min(...chartData);
+                  const range = maxP - minP || 1;
+                  const h = ((price - minP) / range) * 80 + 10;
+                  return <div key={idx} className="flex-1 bg-gradient-to-t from-[#00aaaa]/20 to-[#00ffff] rounded-t-sm" style={{ height: `${h}%` }} />;
+                })
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-600 text-[10px]">No history yet</div>
+              )}
             </div>
 
             {/* Trade Terminal */}

@@ -9,13 +9,15 @@ import { useRouter } from "next/navigation";
 export default function Dashboard() {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [sortBy, setSortBy] = useState("price"); // price, popularity, recent
+  const [sortBy, setSortBy] = useState("price");
   const [filterYear, setFilterYear] = useState("");
   const [filterTrait, setFilterTrait] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [portfolio, setPortfolio] = useState<any[]>([]);
   const [tradeMode, setTradeMode] = useState<"BUY" | "SELL" | null>(null);
   const [tradeShares, setTradeShares] = useState(1);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartRange, setChartRange] = useState<"24h" | "7d" | "30d">("7d");
   const router = useRouter();
 
   const openTradeModal = (targetUser: any, e?: React.MouseEvent) => {
@@ -42,7 +44,6 @@ export default function Dashboard() {
       });
       if (res.ok) {
         alert(`Successfully executed ${tradeMode} of ${tradeShares} shares of ${selectedUser.stockSymbol}! Your balance will update.`);
-        const { refreshUser } = await import("@/context/AuthContext").then(() => ({ refreshUser: window.location.reload }));
         window.location.reload(); 
       } else {
         const error = await res.json();
@@ -53,13 +54,36 @@ export default function Dashboard() {
     }
   };
 
-  const mockChartData = [
-    { time: "9:00", price: 10 },
-    { time: "11:00", price: 12 },
-    { time: "13:00", price: 11.5 },
-    { time: "15:00", price: 14 },
-    { time: "16:00", price: 18 },
-  ];
+  // Fetch real price history for selected stock
+  const fetchPriceHistory = async (userId: number, range: string) => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/market/stocks/${userId}/history?range=${range}`);
+      const data = await res.json();
+      if (res.ok && data.history) {
+        const formatted = data.history.map((h: any) => ({
+          time: new Date(h.recordedAt).toLocaleString("en-IN", {
+            hour: "numeric",
+            minute: "2-digit",
+            ...(range !== "24h" ? { month: "short", day: "numeric" } : {})
+          }),
+          price: parseFloat(h.price.toFixed(2)),
+        }));
+        setChartData(formatted);
+      } else {
+        setChartData([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setChartData([]);
+    }
+  };
+
+  // Whenever selectedUser or chartRange changes, fetch history
+  useEffect(() => {
+    if (selectedUser?.id) {
+      fetchPriceHistory(selectedUser.id, chartRange);
+    }
+  }, [selectedUser?.id, chartRange]);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -90,6 +114,10 @@ export default function Dashboard() {
       console.error(err);
     }
   };
+
+  // Determine chart color based on trend
+  const chartColor = chartData.length >= 2 && chartData[chartData.length - 1].price >= chartData[0].price 
+    ? "#10b981" : "#ef4444";
 
   return (
     <div className="min-h-screen bg-black text-white p-6 relative overflow-hidden">
@@ -167,27 +195,17 @@ export default function Dashboard() {
                 </div>
               ) : (
                 leaderboard.map((stockUser, idx) => (
-                  <div key={stockUser.id} onClick={() => setSelectedUser(stockUser)} className="glass p-4 rounded-xl flex justify-between items-center hover:bg-white/5 transition cursor-pointer group">
+                  <div key={stockUser.id} onClick={() => { setSelectedUser(stockUser); setChartRange("7d"); }} className="glass p-4 rounded-xl flex justify-between items-center hover:bg-white/5 transition cursor-pointer group">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-emerald-500 rounded-full flex items-center justify-center font-bold text-lg">
                         {stockUser.stockSymbol}
                       </div>
-                      {/* Name/Email removed from card view as requested, keeping only symbol focus in the UI, maybe optional name */}
-                    </div>
-                    
-                    {/* Sparkline simulation */}
-                    <div className="w-24 h-10 hidden md:block opacity-50 group-hover:opacity-100 transition-opacity">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={mockChartData}>
-                          <Area type="monotone" dataKey="price" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
                     </div>
 
                     <div className="text-right">
                       <div className="font-bold text-xl">{stockUser.currentPrice?.toFixed(2) || "10.00"} Au</div>
-                      <div className="text-sm text-emerald-400 flex items-center justify-end gap-1">
-                        <TrendingUp size={14} /> +2.4%
+                      <div className="text-sm text-gray-500 flex items-center justify-end gap-1">
+                        Vol: {stockUser.totalVolume || 0}
                       </div>
                     </div>
 
@@ -213,7 +231,7 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {portfolio.map((p, idx) => (
-                    <div key={idx} className="bg-black/40 border border-gray-800 p-3 rounded-xl flex justify-between items-center group cursor-pointer hover:bg-white/5 transition" onClick={() => { setSelectedUser({ id: p.targetUserId, stockSymbol: p.stockSymbol, name: p.name, currentPrice: p.currentPrice }); }}>
+                    <div key={idx} className="bg-black/40 border border-gray-800 p-3 rounded-xl flex justify-between items-center group cursor-pointer hover:bg-white/5 transition" onClick={() => { setSelectedUser({ id: p.targetUserId, stockSymbol: p.stockSymbol, name: p.name, currentPrice: p.currentPrice }); setChartRange("7d"); }}>
                       <div>
                         <div className="font-bold text-lg text-purple-400">{p.stockSymbol}</div>
                         <div className="text-xs text-gray-500">{p.shares} Shares</div>
@@ -237,7 +255,7 @@ export default function Dashboard() {
       {/* Modal for detailed stock view */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
-          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#111] border border-gray-800 p-8 rounded-3xl max-w-2xl w-full relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-3xl font-bold">{selectedUser.name}</h2>
@@ -277,15 +295,31 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
+                {/* Chart Range Toggle */}
+                <div className="flex gap-2 mb-3">
+                  {(["24h", "7d", "30d"] as const).map((r) => (
+                    <button key={r} onClick={() => setChartRange(r)} className={`px-3 py-1 rounded-lg text-xs font-bold transition ${chartRange === r ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"}`}>
+                      {r.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Real Price Chart */}
                 <div className="h-64 w-full bg-black/40 rounded-xl p-4 mb-6 border border-gray-800">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={mockChartData}>
-                      <XAxis dataKey="time" stroke="#4b5563" fontSize={12} />
-                      <YAxis stroke="#4b5563" fontSize={12} domain={['dataMin - 2', 'dataMax + 2']} />
-                      <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #374151', borderRadius: '8px' }} />
-                      <Area type="monotone" dataKey="price" stroke="#10b981" fill="#10b981" fillOpacity={0.2} strokeWidth={3} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {chartData.length >= 2 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <XAxis dataKey="time" stroke="#4b5563" fontSize={11} />
+                        <YAxis stroke="#4b5563" fontSize={11} domain={['dataMin - 2', 'dataMax + 2']} />
+                        <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #374151', borderRadius: '8px' }} />
+                        <Area type="monotone" dataKey="price" stroke={chartColor} fill={chartColor} fillOpacity={0.15} strokeWidth={3} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 text-sm">
+                      No price history yet. Trades will generate data on the next engine tick.
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4">

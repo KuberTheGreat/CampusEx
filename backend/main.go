@@ -20,6 +20,7 @@ func main() {
 	database.ConnectDB()
 
 	go services.StartNewsCronJob()
+	go services.StartPriceEngine()
 
 	r := gin.Default()
 

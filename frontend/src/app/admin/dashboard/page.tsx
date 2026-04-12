@@ -12,6 +12,10 @@ export default function AdminDashboard() {
   const [editCredibility, setEditCredibility] = useState(0);
   const [editPrice, setEditPrice] = useState(0);
 
+  // Price Engine States
+  const [engineInterval, setEngineInterval] = useState(60);
+  const [newInterval, setNewInterval] = useState(60);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -21,6 +25,7 @@ export default function AdminDashboard() {
       return;
     }
     fetchUsers();
+    fetchEngineStatus();
   }, []);
 
   const fetchUsers = async () => {
@@ -28,6 +33,37 @@ export default function AdminDashboard() {
       const res = await fetch("http://localhost:8080/api/admin/users");
       const data = await res.json();
       if (res.ok) setUsers(data.users || []);
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const fetchEngineStatus = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/admin/price-engine/status");
+      const data = await res.json();
+      if (res.ok) {
+        setEngineInterval(data.intervalSeconds);
+        setNewInterval(data.intervalSeconds);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const updateEngineInterval = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/admin/price-engine/interval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seconds: Number(newInterval) })
+      });
+      if (res.ok) {
+        alert(`Price engine interval updated to ${newInterval}s`);
+        setEngineInterval(newInterval);
+      } else {
+        alert("Failed to update interval");
+      }
     } catch(err) {
       console.error(err);
     }
@@ -91,6 +127,52 @@ export default function AdminDashboard() {
           DEACTIVATE
         </button>
       </header>
+
+      {/* Price Engine Control Panel */}
+      <div className="bg-[#111] border border-amber-900/40 rounded-xl p-6 mb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-amber-500 tracking-widest">PRICE_ENGINE.CONFIG</h2>
+            <p className="text-xs text-gray-500 mt-1">Controls the cron interval for volume-based price recalculation. Current: <span className="text-amber-400 font-bold">{engineInterval}s</span></p>
+          </div>
+          <div className="flex items-center gap-3">
+            <input 
+              type="number" 
+              min="10" 
+              value={newInterval} 
+              onChange={(e) => setNewInterval(Math.max(10, Number(e.target.value)))} 
+              className="w-24 bg-black border border-gray-800 p-2 rounded text-center text-amber-500 font-bold focus:outline-none focus:border-amber-500"
+            />
+            <span className="text-xs text-gray-500">seconds</span>
+            <button 
+              onClick={updateEngineInterval} 
+              disabled={newInterval === engineInterval}
+              className="px-4 py-2 bg-amber-900/30 border border-amber-500/50 text-amber-400 hover:bg-amber-900/50 rounded font-bold text-xs tracking-widest transition disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              APPLY
+            </button>
+          </div>
+        </div>
+        {/* Quick presets */}
+        <div className="flex gap-2 mt-4">
+          {[
+            { label: "10s (Debug)", val: 10 },
+            { label: "30s", val: 30 },
+            { label: "1 min", val: 60 },
+            { label: "5 min", val: 300 },
+            { label: "15 min", val: 900 },
+            { label: "1 hour", val: 3600 },
+          ].map((preset) => (
+            <button 
+              key={preset.val} 
+              onClick={() => setNewInterval(preset.val)} 
+              className={`px-3 py-1 rounded text-xs font-bold transition ${newInterval === preset.val ? 'bg-amber-500 text-black' : 'bg-black border border-gray-800 text-gray-500 hover:text-amber-400 hover:border-amber-800'}`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="bg-[#111] border border-gray-800 rounded-xl overflow-hidden">
         <table className="w-full text-left border-collapse">
@@ -160,3 +242,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
