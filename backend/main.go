@@ -21,6 +21,7 @@ func main() {
 
 	go services.StartNewsCronJob()
 	go services.StartPriceEngine()
+	go services.StartAuctionCronJob()
 
 	r := gin.Default()
 
@@ -47,6 +48,7 @@ func main() {
 	routes.RegisterPortfolioRoutes(api)
 	routes.RegisterEventRoutes(api)
 	routes.RegisterShopRoutes(api)
+	routes.RegisterProfileBiddingRoutes(api)
 
 	port := os.Getenv("PORT")
 	if port == "" {

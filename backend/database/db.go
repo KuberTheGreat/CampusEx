@@ -70,8 +70,8 @@ func ConnectDB() {
 
 	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-	// Conditional migration: only run AutoMigrate if schema is missing
-	// This saves ~13 round-trips on every restart when tables already exist
+	// Conditional migration: only run AutoMigrate if schema is missing.
+	// This saves ~13 round-trips on every restart when tables already exist.
 	var tableExists bool
 	db.Raw("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users')").Scan(&tableExists)
 
@@ -92,6 +92,8 @@ func ConnectDB() {
 			&models.EventBid{},
 			&models.ShopItem{},
 			&models.UserInventory{},
+			&models.ProfileAuction{},
+			&models.ProfileBid{},
 		)
 		if err != nil {
 			log.Fatal("Migration Failed. \n", err)
@@ -117,6 +119,8 @@ func ConnectDB() {
 				&models.EventBid{},
 				&models.ShopItem{},
 				&models.UserInventory{},
+				&models.ProfileAuction{},
+				&models.ProfileBid{},
 			)
 			if err != nil {
 				log.Fatal("Migration Failed. \n", err)
@@ -127,6 +131,7 @@ func ConnectDB() {
 
 	DB = db
 	seedShopItems(db)
+	seedProfileAuctions(db)
 }
 
 func seedShopItems(db *gorm.DB) {
@@ -141,5 +146,25 @@ func seedShopItems(db *gorm.DB) {
 		}
 		db.Create(&items)
 		log.Println("Seeded shop items.")
+	}
+}
+
+func seedProfileAuctions(db *gorm.DB) {
+	var count int64
+	db.Model(&models.ProfileAuction{}).Count(&count)
+	if count == 0 {
+		// Mock auction for the first user
+		var user models.User
+		if err := db.First(&user).Error; err == nil {
+			auction := models.ProfileAuction{
+				TargetUserID:   user.ID,
+				StartTime:      time.Now().Add(-1 * time.Hour),  // Started 1 hour ago
+				EndTime:        time.Now().Add(23 * time.Hour),  // Ends in 23 hours
+				Status:         "ACTIVE",
+				RejectionsLeft: 3,
+			}
+			db.Create(&auction)
+			log.Println("Seeded mock profile auction.")
+		}
 	}
 }

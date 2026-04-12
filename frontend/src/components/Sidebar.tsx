@@ -15,6 +15,7 @@ export default function Sidebar() {
     { name: "Portfolio", path: "/portfolio", icon: "💼" },
     { name: "3D View", path: "/3d-market", icon: "🌐" },
     { name: "Events", path: "/events", icon: "🏆" },
+    { name: "Profile Bids", path: "/profile-bidding", icon: "💝" },
     { name: "News", path: "/news", icon: "📰" },
     { name: "Publish", path: "/news/create", icon: "✍️" },
     { name: "Shop", path: "/shop", icon: "⚡" },

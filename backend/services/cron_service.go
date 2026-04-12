@@ -148,3 +148,38 @@ func processNewsResolution(news models.News) error {
 
 	return tx.Save(&news).Error
 }
+
+func StartAuctionCronJob() {
+	ticker := time.NewTicker(1 * time.Minute)
+	go func() {
+		for range ticker.C {
+			resolveExpiredAuctions()
+		}
+	}()
+	log.Println("Auction resolution cron job started...")
+}
+
+func resolveExpiredAuctions() {
+	var expiredAuctions []models.ProfileAuction
+	// Transition ACTIVE auctions whose EndTime has passed into RESOLVING state
+	if err := database.DB.Where("status = ? AND end_time <= ?", "ACTIVE", time.Now()).Find(&expiredAuctions).Error; err != nil {
+		log.Println("Error fetching expired auctions:", err)
+		return
+	}
+
+	for _, auction := range expiredAuctions {
+		auction.Status = "RESOLVING"
+		var count int64
+		// Optional: if no bids, immediately mark as COMPLETED
+		database.DB.Model(&models.ProfileBid{}).Where("auction_id = ?", auction.ID).Count(&count)
+		if count == 0 {
+			auction.Status = "COMPLETED"
+		}
+		
+		if err := database.DB.Save(&auction).Error; err != nil {
+			log.Printf("Failed to update auction %d: %v\n", auction.ID, err)
+		} else {
+			log.Printf("Auction %d is now %s\n", auction.ID, auction.Status)
+		}
+	}
+}
