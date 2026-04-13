@@ -21,6 +21,10 @@ func RegisterAdminRoutes(router *gin.RouterGroup) {
 		// Price Engine Controls
 		admin.GET("/price-engine/status", getPriceEngineStatus)
 		admin.POST("/price-engine/interval", setPriceEngineInterval)
+
+		// News Timer Controls
+		admin.GET("/news/duration", getNewsVotingDuration)
+		admin.POST("/news/duration", setNewsVotingDuration)
 	}
 }
 
@@ -119,4 +123,24 @@ func setPriceEngineInterval(c *gin.Context) {
 
 	services.SetPriceEngineInterval(input.Seconds)
 	c.JSON(http.StatusOK, gin.H{"message": "Price engine interval updated", "intervalSeconds": input.Seconds})
+}
+
+func getNewsVotingDuration(c *gin.Context) {
+	duration := services.GetNewsVotingDuration()
+	c.JSON(http.StatusOK, gin.H{"durationMinutes": duration})
+}
+
+type DurationInput struct {
+	Minutes int `json:"minutes" binding:"required,gt=0"`
+}
+
+func setNewsVotingDuration(c *gin.Context) {
+	var input DurationInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid duration value"})
+		return
+	}
+
+	services.SetNewsVotingDuration(input.Minutes)
+	c.JSON(http.StatusOK, gin.H{"message": "News voting duration updated", "durationMinutes": input.Minutes})
 }

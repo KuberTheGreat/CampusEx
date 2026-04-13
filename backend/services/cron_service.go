@@ -3,12 +3,30 @@ package services
 import (
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
 	"gorm.io/gorm"
 )
+
+var (
+	newsTimerMu           sync.Mutex
+	newsVotingDurationMin int = 5 // Default 5 mins
+)
+
+func GetNewsVotingDuration() int {
+	newsTimerMu.Lock()
+	defer newsTimerMu.Unlock()
+	return newsVotingDurationMin
+}
+
+func SetNewsVotingDuration(minutes int) {
+	newsTimerMu.Lock()
+	defer newsTimerMu.Unlock()
+	newsVotingDurationMin = minutes
+}
 
 func StartNewsCronJob() {
 	ticker := time.NewTicker(1 * time.Minute)

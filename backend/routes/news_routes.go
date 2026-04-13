@@ -6,6 +6,7 @@ import (
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
+	"github.com/CampusEx/backend/services"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -43,7 +44,7 @@ func createNews(c *gin.Context) {
 		Content:     input.Content,
 		EvidenceURL: input.EvidenceURL,
 		Status:      "PENDING",
-		EndsAt:      time.Now().Add(5 * time.Minute),
+		EndsAt:      time.Now().Add(time.Duration(services.GetNewsVotingDuration()) * time.Minute),
 	}
 
 	for _, sID := range input.SubjectIDs {
