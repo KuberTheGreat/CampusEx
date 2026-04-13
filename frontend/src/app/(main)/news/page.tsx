@@ -1,21 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
-type NewsItem = {
+// ── Types ────────────────────────────────────────────────────────────────────
+type Subject = {
   id: number;
-  publisher: { name: string; credibilityScore: number };
-  subject: { name: string; stockPrice: number } | null;
-  content: string;
-  status: string;
-  endsAt: string;
+  name: string;
+  stockSymbol: string;
+};
+
+type NewsImpact = {
+  id: number;
+  subjectId: number;
+  subject: Subject;
   finalImpactDir: string;
   finalImpactPct: number;
 };
 
+type NewsItem = {
+  id: number;
+  publisher: { name: string; credibilityScore: number };
+  content: string;
+  evidenceUrl: string;
+  status: string;
+  endsAt: string;
+  impacts: NewsImpact[];
+};
+
+// ── Countdown helper ─────────────────────────────────────────────────────────
 function Countdown({ endsAt }: { endsAt: string }) {
   const [timeLeft, setTimeLeft] = useState("");
   useEffect(() => {
@@ -34,6 +49,74 @@ function Countdown({ endsAt }: { endsAt: string }) {
   return <span>{timeLeft}</span>;
 }
 
+// ── @mention parser ──────────────────────────────────────────────────────────
+// Builds a name→Subject map from impacts, then replaces every @Name in the
+// content with a clickable chip linking to /profile/[id].
+function MentionContent({ content, impacts }: { content: string; impacts: NewsImpact[] }) {
+  // Build lookup: lowercased name → subject
+  const nameMap = new Map<string, Subject>();
+  for (const impact of impacts ?? []) {
+    if (impact.subject?.name) {
+      // Mention tags have spaces stripped (e.g. @DevangVaishnav), so we must strip spaces from the DB name to match them
+      const cleanName = impact.subject.name.replace(/\s+/g, '').toLowerCase();
+      nameMap.set(cleanName, impact.subject);
+    }
+  }
+
+  if (nameMap.size === 0) {
+    return <span>&quot;{content}&quot;</span>;
+  }
+
+  // Sort names longest-first to avoid short names shadowing longer ones
+  const sortedNames = [...nameMap.keys()].sort((a, b) => b.length - a.length);
+  const escapedNames = sortedNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const mentionRegex = new RegExp(`@(${escapedNames.join("|")})`, "gi");
+
+  const parts: (string | React.ReactElement)[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = mentionRegex.exec(content)) !== null) {
+    // Text before the mention
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const mentionedName = match[1];
+    const subject = nameMap.get(mentionedName.toLowerCase());
+
+    if (subject) {
+      parts.push(
+        <Link
+          key={match.index}
+          href={`/profile/${subject.id}`}
+          className="inline-flex items-center gap-1 font-semibold text-emerald-400 hover:text-white bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/20 hover:border-emerald-400/50 px-2 py-0.5 rounded-full text-sm transition-all duration-150 mx-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          @{mentionedName}
+          <span className="text-[10px] text-emerald-600 font-bold">${subject.stockSymbol}</span>
+        </Link>
+      );
+    } else {
+      parts.push(`@${mentionedName}`);
+    }
+
+    lastIndex = mentionRegex.lastIndex;
+  }
+
+  // Remaining text after last mention
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return (
+    <span>
+      &quot;{parts.map((p, i) => (typeof p === "string" ? <span key={i}>{p}</span> : p))}&quot;
+    </span>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function NewsPage() {
   const { user } = useAuth();
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
@@ -43,8 +126,8 @@ export default function NewsPage() {
 
   const fetchNews = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/news");
-      if (res.ok) { const data = await res.json(); setNewsList(data.news); }
+      const res = await fetch("/api/news");
+      if (res.ok) { const data = await res.json(); setNewsList(data.news ?? []); }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -52,7 +135,7 @@ export default function NewsPage() {
   const handleVote = async (newsId: number, isConfirmed: boolean) => {
     if (!user?.id) return toast.error("Please log in first.");
     try {
-      const res = await fetch(`http://localhost:8080/api/news/${newsId}/vote`, {
+      const res = await fetch(`/api/news/${newsId}/vote`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, isConfirmed }),
       });
@@ -107,6 +190,7 @@ export default function NewsPage() {
                     {news.status === "PENDING" && <span className="ml-2 opacity-75 text-[10px]"><Countdown endsAt={news.endsAt} /></span>}
                   </div>
 
+                  {/* Publisher */}
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm" style={{ background: "var(--primary)" }}>
                       {news.publisher?.name?.[0] || "?"}
@@ -116,12 +200,46 @@ export default function NewsPage() {
                         {news.publisher?.name || "Unknown"}{" "}
                         <span className="font-normal text-xs" style={{ color: "var(--accent-purple)" }}>Cred: {news.publisher?.credibilityScore}</span>
                       </h3>
-                      {news.subject && <p className="text-xs" style={{ color: "var(--text-secondary)" }}>About <span className="font-medium" style={{ color: "var(--primary)" }}>{news.subject.name}</span></p>}
+                      {/* Subjects chips */}
+                      {news.impacts && news.impacts.length > 0 && (
+                        <p className="text-xs flex flex-wrap gap-1 mt-0.5">
+                          <span style={{ color: "var(--text-secondary)" }}>Reporting on</span>
+                          {news.impacts.map((imp) => (
+                            <Link
+                              key={imp.id}
+                              href={`/profile/${imp.subject?.id}`}
+                              className="font-medium hover:underline"
+                              style={{ color: "var(--primary)" }}
+                            >
+                              {imp.subject?.name}
+                            </Link>
+                          ))}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <p className="text-base leading-relaxed mb-5 pl-[52px]" style={{ color: "var(--text)" }}>"{news.content}"</p>
+                  {/* Content with clickable @mentions */}
+                  <p className="text-base leading-relaxed mb-5 pl-[52px]" style={{ color: "var(--text)" }}>
+                    <MentionContent content={news.content} impacts={news.impacts ?? []} />
+                  </p>
 
+                  {/* Evidence */}
+                  {news.evidenceUrl && (
+                    <div className="pl-[52px] mb-4">
+                      {news.evidenceUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ? (
+                        <img src={news.evidenceUrl} alt="Evidence" className="rounded-xl max-h-[400px] w-auto object-contain border border-white/10 shadow-lg" loading="lazy" />
+                      ) : news.evidenceUrl.match(/\.(mp4|webm)($|\?)/i) ? (
+                        <video src={news.evidenceUrl} controls className="rounded-xl max-h-[400px] w-auto border border-white/10 shadow-lg" />
+                      ) : (
+                        <a href={news.evidenceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 hover:bg-white/5 border border-white/10 rounded-xl transition-colors text-sm text-purple-300">
+                          📄 View Evidence Document
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Vote buttons */}
                   {news.status === "PENDING" && (
                     <div className="pl-[52px] flex gap-3">
                       <button onClick={() => handleVote(news.id, true)} className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all" style={{ background: "rgba(52,199,89,0.08)", color: "var(--accent-green)", border: "1px solid rgba(52,199,89,0.2)" }}>✓ Confirm</button>
@@ -129,19 +247,38 @@ export default function NewsPage() {
                     </div>
                   )}
 
-                  {news.status === "CONFIRMED" && news.finalImpactDir !== "NEUTRAL" && (
-                    <div className="pl-[52px] mt-3 p-4 rounded-xl flex items-center gap-3" style={{ background: "rgba(52,199,89,0.06)", border: "1px solid rgba(52,199,89,0.15)" }}>
-                      <span className="text-2xl">🤖</span>
-                      <div>
-                        <h4 className="font-bold text-xs" style={{ color: "var(--accent-green)" }}>AI Market Impact</h4>
-                        <p className="text-sm mt-1" style={{ color: "var(--text)" }}>
-                          {news.subject && <><span className="font-bold">{news.subject.name}</span>'s price {news.finalImpactDir === "POSITIVE" ? "surged" : "dropped"} by </>}
-                          <span className="font-bold" style={{ color: news.finalImpactDir === "POSITIVE" ? "var(--accent-green)" : "var(--accent-red)" }}>{news.finalImpactPct}%</span>.
-                        </p>
-                      </div>
+                  {/* AI Impact cards */}
+                  {news.status === "CONFIRMED" && news.impacts && news.impacts.length > 0 && (
+                    <div className="pl-[52px] mt-4 space-y-2">
+                      <h4 className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>🤖 AI Market Impact</h4>
+                      {news.impacts.map((impact) => {
+                        const dir = impact.finalImpactDir;
+                        if (!dir || dir === "NEUTRAL" || dir === "PENDING" || impact.finalImpactPct === 0) return null;
+                        const isPositive = dir === "POSITIVE";
+                        return (
+                          <Link
+                            key={impact.id}
+                            href={`/profile/${impact.subject?.id}`}
+                            className="flex items-center gap-3 p-3 rounded-xl transition-all hover:opacity-80"
+                            style={{
+                              background: isPositive ? "rgba(52,199,89,0.06)" : "rgba(255,59,48,0.06)",
+                              border: isPositive ? "1px solid rgba(52,199,89,0.15)" : "1px solid rgba(255,59,48,0.15)",
+                            }}
+                          >
+                            <span className="text-xl">{isPositive ? "📈" : "📉"}</span>
+                            <p className="text-sm" style={{ color: "var(--text)" }}>
+                              <span className="font-bold">{impact.subject?.name}</span>&apos;s stock {isPositive ? "surged" : "dropped"} by{" "}
+                              <span className="font-bold" style={{ color: isPositive ? "var(--accent-green)" : "var(--accent-red)" }}>
+                                {impact.finalImpactPct}%
+                              </span>
+                            </p>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
 
+                  {/* Rejected message */}
                   {news.status === "REJECTED" && (
                     <div className="pl-[52px] mt-3 text-sm p-3 rounded-xl" style={{ background: "rgba(255,59,48,0.06)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.15)" }}>
                       This news was rejected by the community.
