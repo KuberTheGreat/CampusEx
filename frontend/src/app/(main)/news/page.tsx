@@ -220,9 +220,9 @@ export default function NewsPage() {
                   </div>
 
                   {/* Content with clickable @mentions */}
-                  <p className="text-base leading-relaxed mb-5 pl-[52px]" style={{ color: "var(--text)" }}>
+                  <div className="text-base leading-relaxed mb-5 pl-[52px]" style={{ color: "var(--text)" }}>
                     <MentionContent content={news.content} impacts={news.impacts ?? []} />
-                  </p>
+                  </div>
 
                   {/* Evidence */}
                   {news.evidenceUrl && (
