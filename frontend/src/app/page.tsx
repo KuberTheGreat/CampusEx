@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { jwtDecode } from "jwt-decode";
 import dynamic from "next/dynamic";
+import DecorativeBackground from "@/components/DecorativeBackground";
 
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
@@ -20,7 +21,6 @@ export default function Home() {
   const router = useRouter();
   const { login } = useAuth();
 
-  // Load Lottie animation from CDN
   useEffect(() => {
     fetch("/lottie/stock-market.json")
       .then(r => r.json()).then(setLottieData).catch(() => {});
@@ -82,33 +82,36 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" style={{ background: "var(--bg)" }}>
-      {/* Decorative blobs */}
-      <div className="absolute top-[-15%] left-[-10%] w-[45%] h-[45%] rounded-full opacity-20 animate-float" style={{ background: "var(--primary)", filter: "blur(120px)" }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full opacity-15 animate-float" style={{ background: "var(--accent-purple)", filter: "blur(120px)", animationDelay: "2s" }} />
+      <DecorativeBackground />
 
       <main className="z-10 w-full max-w-5xl p-8 flex flex-col items-center">
         {step === 0 && (
-          <div className="flex flex-col md:flex-row items-center gap-8 animate-fade-in">
-            {/* Lottie animation */}
+          <div className="flex flex-col md:flex-row items-center gap-10 animate-fade-in">
+            {/* Lottie */}
             <div className="w-72 h-72 md:w-80 md:h-80 flex-shrink-0">
               {lottieData ? (
                 <Lottie animationData={lottieData} loop autoplay style={{ width: "100%", height: "100%" }} />
               ) : (
-                <div className="w-full h-full rounded-3xl animate-pulse" style={{ background: "var(--bg-card)" }} />
+                <div className="w-full h-full rounded-3xl animate-shimmer" style={{ background: "var(--bg-card)" }} />
               )}
             </div>
 
-            {/* Text + CTA */}
+            {/* Hero */}
             <div className="text-center md:text-left space-y-5">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-extrabold mb-4" style={{ background: "var(--primary)" }}>Cx</div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight" style={{ color: "var(--text)" }}>
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black"
+                style={{ background: "linear-gradient(135deg, var(--primary), var(--accent))" }}
+              >
+                Cx
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight" style={{ color: "var(--text)" }}>
                 Welcome to <span style={{ color: "var(--primary)" }}>CampusEx</span>
               </h1>
               <p className="text-base max-w-md leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                Transform everyday college life into a dynamic virtual economy.
-                You aren't just a student — you are a tradable asset.
+                your college. your market. trade people like stocks.<br />
+                yes, we actually went there.
               </p>
-              <button onClick={() => setStep(1)} className="btn-primary text-lg px-10 py-4 animate-pulse-glow">
+              <button onClick={() => setStep(1)} className="btn-accent text-lg px-10 py-4 animate-pulse-glow">
                 Enter The Market
               </button>
             </div>
@@ -117,7 +120,7 @@ export default function Home() {
 
         {step === 1 && (
           <div className="card p-10 w-full max-w-md text-center space-y-6 animate-fade-in">
-            <h2 className="text-2xl font-extrabold" style={{ color: "var(--text)" }}>Secure Access</h2>
+            <h2 className="text-2xl font-black" style={{ color: "var(--text)" }}>Secure Access</h2>
             <p style={{ color: "var(--text-secondary)" }}>Verify your college identity to continue.</p>
             <div className="flex flex-col items-center gap-4 pt-2">
               <GoogleLogin onSuccess={handleGoogleLoginSuccess} onError={handleGoogleLoginError} shape="rectangular" size="large" theme="outline" />
@@ -129,7 +132,7 @@ export default function Home() {
 
         {step === 2 && (
           <form className="card p-8 w-full max-w-lg space-y-5 animate-fade-in" onSubmit={handleCreateProfile}>
-            <h2 className="text-2xl font-extrabold text-center" style={{ color: "var(--text)" }}>List Your Profile</h2>
+            <h2 className="text-2xl font-black text-center" style={{ color: "var(--text)" }}>List Your Profile</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Name</label>
@@ -142,38 +145,42 @@ export default function Home() {
               <div>
                 <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Traits & Quirks (comma separated)</label>
                 <textarea placeholder="Coder, Gymbro, Overthinker..." value={traits} onChange={(e) => setTraits(e.target.value)} className="input w-full min-h-[100px] resize-none" />
-                <p className="text-xs mt-1" style={{ color: "var(--primary)" }}>* 50% of these will be randomly hidden to create mystery.</p>
+                <p className="text-xs mt-1" style={{ color: "var(--accent)" }}>* 50% of these will be randomly hidden to create mystery.</p>
               </div>
             </div>
-            <button type="submit" className="btn-primary w-full">Continue</button>
+            <button type="submit" className="btn-accent w-full">Continue</button>
           </form>
         )}
 
         {step === 3 && (
           <form className="card p-8 w-full max-w-md space-y-5 animate-fade-in" onSubmit={handleScheduleIPO}>
-            <h2 className="text-2xl font-extrabold text-center" style={{ color: "var(--text)" }}>Schedule IPO</h2>
+            <h2 className="text-2xl font-black text-center" style={{ color: "var(--text)" }}>Schedule IPO</h2>
             <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>Pick a date to officially launch on the market.</p>
             <div>
               <label className="block text-xs font-bold mb-1" style={{ color: "var(--text-secondary)" }}>Launch Date</label>
               <input type="date" required value={ipoDate} onChange={(e) => setIpoDate(e.target.value)} className="input w-full" />
             </div>
-            <button type="submit" className="btn-primary w-full animate-pulse-glow">Confirm & Launch</button>
+            <button type="submit" className="btn-accent w-full animate-pulse-glow">Confirm & Launch</button>
           </form>
         )}
 
         {step === 4 && (
           <div className="card p-10 w-full max-w-md text-center space-y-5 animate-fade-in">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto text-white text-2xl" style={{ background: "var(--accent-green)" }}>✓</div>
-            <h2 className="text-2xl font-extrabold" style={{ color: "var(--text)" }}>You are pre-listed!</h2>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ background: "var(--green)" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <polyline points="5 12 10 17 19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-black" style={{ color: "var(--text)" }}>You are pre-listed!</h2>
             <p style={{ color: "var(--text-secondary)" }}>
               Welcome, <span className="font-bold" style={{ color: "var(--primary)" }}>{name}</span>.<br />
               Your stock <b>${stockSymbol || "KUB"}</b> is now accepting pre-orders.
             </p>
             <div className="p-4 rounded-xl flex justify-between items-center text-sm" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
               <span style={{ color: "var(--text-secondary)" }}>Initial Balance</span>
-              <span className="font-bold" style={{ color: "var(--accent-green)" }}>1000 AURA</span>
+              <span className="font-black" style={{ color: "var(--green)" }}>1000 AURA</span>
             </div>
-            <button onClick={() => router.push("/dashboard")} className="btn-secondary w-full">Go To Dashboard</button>
+            <button onClick={() => router.push("/dashboard")} className="btn-accent w-full">Go To Dashboard</button>
           </div>
         )}
       </main>

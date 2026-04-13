@@ -10,14 +10,13 @@ interface AvatarProps {
 }
 
 /**
- * DiceBear avatar using the Micah style.
- * Generates a unique avatar based on {name}{userId}.
- * Falls back to first-letter initial if image fails.
+ * DiceBear avatar using the Adventurer style.
+ * Deterministic based on {name}{userId}.
  */
 export default function Avatar({ userId, name, size = 40, className = "" }: AvatarProps) {
   const [hasError, setHasError] = useState(false);
   const seed = `${name || "user"}${userId || 0}`;
-  const src = `https://api.dicebear.com/9.x/micah/svg?seed=${encodeURIComponent(seed)}`;
+  const src = `https://api.dicebear.com/7.x/micah/svg?seed=${encodeURIComponent(seed)}`;
   const initial = (name || "U")[0].toUpperCase();
 
   if (hasError) {
@@ -28,7 +27,7 @@ export default function Avatar({ userId, name, size = 40, className = "" }: Avat
           width: size,
           height: size,
           fontSize: size * 0.38,
-          background: "var(--primary)",
+          background: "var(--accent)",
         }}
       >
         {initial}
@@ -43,7 +42,7 @@ export default function Avatar({ userId, name, size = 40, className = "" }: Avat
       width={size}
       height={size}
       className={`rounded-full flex-shrink-0 ${className}`}
-      style={{ width: size, height: size, background: "var(--bg-hover)" }}
+      style={{ width: size, height: size, background: "var(--bg-card)" }}
       onError={() => setHasError(true)}
     />
   );

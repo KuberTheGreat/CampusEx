@@ -53,11 +53,18 @@ export default function PortfolioPage() {
   if (!user) return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>Please log in to view your portfolio.</div>;
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>💰 Your Portfolio</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>stonks go up? let's find out 📊</p>
+          <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
+              <rect x="3" y="7" width="18" height="14" rx="3" stroke="var(--accent)" strokeWidth="2" />
+              <path d="M8 7V5C8 3.9 8.9 3 10 3H14C15.1 3 16 3.9 16 5V7" stroke="var(--accent)" strokeWidth="2" />
+              <circle cx="12" cy="14" r="2.5" fill="var(--accent)" opacity="0.5" />
+            </svg>
+            Portfolio
+          </h1>
+          <p className="text-sm mt-1 ml-11" style={{ color: "var(--text-secondary)" }}>your bags. your gains. your call.</p>
         </header>
 
         {/* Summary Cards */}

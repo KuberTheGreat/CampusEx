@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { IconLightning } from "@/components/Icons";
 import toast from "react-hot-toast";
 
 interface ShopItem {
@@ -72,16 +73,21 @@ export default function PowerShop() {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Power Shop ⚡</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Spend Aura Coins. Unlock abilities. Dominate the market.</p>
+            <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
+              <IconLightning size={32} color="var(--accent)" />
+              Power Shop
+            </h1>
+            <p className="text-sm mt-1 ml-11" style={{ color: "var(--text-secondary)" }}>spend aura. unlock abilities. dominate.</p>
           </div>
           <div className="card px-5 py-3 flex items-center gap-3">
-            <span className="text-lg">✨</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-soft)" }}>
+              <IconLightning size={18} color="var(--accent)" />
+            </div>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Aura Coins</div>
               <div className="text-lg font-extrabold" style={{ color: "var(--primary)" }}>{auraCoins.toLocaleString()}</div>
@@ -120,7 +126,7 @@ export default function PowerShop() {
                     <button onClick={() => handleBuy(item)} disabled={auraCoins < item.price}
                       className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40">
                       <span>Purchase</span>
-                      <span className="font-extrabold">✨ {item.price}</span>
+                      <span className="font-extrabold">{item.price} Au</span>
                     </button>
                   </div>
                 </div>

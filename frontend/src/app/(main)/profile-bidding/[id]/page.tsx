@@ -104,7 +104,7 @@ export default function ProfileAuctionDetails() {
   if (!auction) return <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-10 text-center">Auction not found</div>;
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-6 md:p-12">
+    <div className="min-h-screen text-[var(--text)] p-6 md:p-12">
       <Link href="/profile-bidding" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--primary)] mb-8 transition-colors">
         <ArrowLeft size={20} /> Back to Auctions
       </Link>

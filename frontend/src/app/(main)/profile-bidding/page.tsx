@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Clock, ArrowRight, Gavel, AlertCircle } from "lucide-react";
+import { Clock, ArrowRight, AlertCircle } from "lucide-react";
+import { IconGavel, IconHeart } from "@/components/Icons";
 import Link from "next/link";
 import Avatar from "@/components/Avatar";
 
@@ -29,17 +30,15 @@ export default function ProfileBiddingDashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      <div className="fixed top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply blur-[128px] opacity-20" style={{ background: "var(--primary)" }} />
-      <div className="fixed bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply blur-[128px] opacity-20" style={{ background: "var(--primary-soft)" }} />
-
+    <div className="min-h-screen p-6 relative overflow-hidden" style={{ color: "var(--text)" }}>
       <div className="max-w-6xl mx-auto z-10 relative">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-4xl font-extrabold mb-2 text-[var(--text)]">
+            <h1 className="text-4xl font-black mb-2 flex items-center gap-3" style={{ color: "var(--text)" }}>
+              <IconHeart size={36} color="var(--accent)" />
               Profile Bidding
             </h1>
-            <p className="text-[var(--text-secondary)]">Bid on top profiles to unlock exclusive dating and chat mechanics.</p>
+            <p className="ml-12" style={{ color: "var(--text-secondary)" }}>bid on profiles. unlock connections. shoot your shot.</p>
           </div>
         </header>
 
@@ -76,7 +75,7 @@ export default function ProfileBiddingDashboard() {
 
                   <Link href={`/profile-bidding/${auction.id}`}>
                     <button className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-                      <Gavel size={18} /> {auction.status === 'ACTIVE' ? 'Enter Auction' : 'View Resolution'} <ArrowRight size={16} />
+                      <IconGavel size={18} /> {auction.status === 'ACTIVE' ? 'Enter Auction' : 'View Resolution'} <ArrowRight size={16} />
                     </button>
                   </Link>
                 </div>

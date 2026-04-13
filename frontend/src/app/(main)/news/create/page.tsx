@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { IconPen } from "@/components/Icons";
 
 type SearchedUser = { id: number; name: string; stockSymbol: string; };
 
@@ -56,13 +57,16 @@ export default function CreateNewsPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen flex items-center justify-center p-6">
       <div className="card max-w-lg w-full p-8 relative animate-fade-in">
-        <Link href="/news" className="text-sm font-medium mb-6 inline-block transition" style={{ color: "var(--primary)" }}>
+        <Link href="/news" className="text-sm font-medium mb-6 inline-block transition" style={{ color: "var(--accent)" }}>
           ← Back to News Feed
         </Link>
-        <h1 className="text-2xl font-extrabold mb-1" style={{ color: "var(--text)" }}>Publish Campus News</h1>
-        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>Report events truthfully. Your credibility is at stake.</p>
+        <h1 className="text-2xl font-black mb-1 flex items-center gap-2" style={{ color: "var(--text)" }}>
+          <IconPen size={24} color="var(--accent)" />
+          Publish News
+        </h1>
+        <p className="text-sm mb-6 ml-8" style={{ color: "var(--text-secondary)" }}>spill the tea. your credibility is at stake.</p>
 
         {!user ? (
           <div className="p-4 rounded-xl text-sm" style={{ background: "rgba(255,59,48,0.08)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.2)" }}>

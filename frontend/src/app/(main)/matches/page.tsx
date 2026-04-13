@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Heart, MessageCircle, Star, AlertCircle } from "lucide-react";
+import { MessageCircle, Star, AlertCircle } from "lucide-react";
+import { IconFire } from "@/components/Icons";
 import Avatar from "@/components/Avatar";
 import Link from "next/link";
 
@@ -39,18 +40,14 @@ export default function MatchesDashboard() {
   const pastMatches = matches.filter(m => m.status === 'ENDED');
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-      {/* Background aesthetics */}
-      <div className="fixed top-[0%] left-[-10%] w-[40%] h-[40%] rounded-full mix-blend-multiply blur-[150px] opacity-20" style={{ background: "var(--primary)" }} />
-      <div className="fixed bottom-[10%] right-[-10%] w-[50%] h-[50%] rounded-full mix-blend-multiply blur-[150px] opacity-20" style={{ background: "var(--primary-soft)" }} />
-
+    <div className="min-h-screen p-6 relative overflow-hidden" style={{ color: "var(--text)" }}>
       <div className="max-w-5xl mx-auto z-10 relative">
         <header className="mb-10">
-          <h1 className="text-5xl font-extrabold mb-3 flex items-center gap-3 text-[var(--text)]">
-            <Heart className="fill-current text-[var(--primary)]" strokeWidth={0} size={40} />
-            Your Matches
+          <h1 className="text-4xl font-black mb-2 flex items-center gap-3" style={{ color: "var(--text)" }}>
+            <IconFire size={36} color="var(--accent)" />
+            My Matches
           </h1>
-          <p className="text-[var(--text-secondary)] text-lg">Connections forged through the arena of value.</p>
+          <p className="ml-12" style={{ color: "var(--text-secondary)" }}>connections forged through the arena of value.</p>
         </header>
 
         {isLoading ? (

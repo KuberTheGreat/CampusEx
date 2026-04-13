@@ -143,7 +143,7 @@ export default function MatchDetailPage() {
   const isEnded = match.status === 'ENDED';
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col md:flex-row overflow-hidden absolute inset-0">
+    <div className="min-h-screen text-[var(--text)] flex flex-col md:flex-row overflow-hidden absolute inset-0">
       
       {/* Left Panel: Profile Reveal & Actions */}
       <div className="w-full md:w-1/3 xl:w-1/4 border-r border-[var(--border)] bg-[var(--bg-card)] flex flex-col z-20 overflow-y-auto overflow-x-hidden shadow-xl">
@@ -190,21 +190,29 @@ export default function MatchDetailPage() {
           {!isEnded && (
             <div className="w-full space-y-6">
               {/* Gift Section */}
-              <div className="card p-5">
+              <div className="card p-5" style={{ overflow: 'visible' }}>
                 <h4 className="font-bold flex items-center gap-2 mb-3 text-sm" style={{ color: "var(--primary)" }}>
                   <Gift size={16} /> Gift Aura Coins
                 </h4>
-                <form onSubmit={sendGift} className="flex gap-2">
+                <form onSubmit={sendGift} className="flex items-center gap-2" style={{ overflow: 'visible' }}>
                   <input
                     type="number"
                     min="1"
                     placeholder="Amount..."
                     value={giftAmount}
                     onChange={(e) => setGiftAmount(e.target.value)}
-                    className="input flex-1"
+                    className="input flex-1 min-w-0"
                   />
-                  <button type="submit" className="btn-primary px-4">
-                    Send
+                  <button
+                    type="submit"
+                    className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all transform hover:scale-110 active:scale-95"
+                    style={{
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      boxShadow: '0 3px 10px rgba(255, 107, 44, 0.25)',
+                    }}
+                  >
+                    <Send size={16} />
                   </button>
                 </form>
               </div>
@@ -247,7 +255,7 @@ export default function MatchDetailPage() {
       </div>
 
       {/* Right Panel: Chat Interface */}
-      <div className="flex-1 flex flex-col relative z-10 bg-[var(--bg)]">
+      <div className="flex-1 flex flex-col relative z-10">
         
         {/* Chat Header */}
         <div className="h-20 border-b border-[var(--border)] flex items-center px-8 relative z-10 bg-[var(--bg-card)]">
@@ -292,14 +300,14 @@ export default function MatchDetailPage() {
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-[var(--bg-card)] border-t border-[var(--border)] relative z-10">
+        <div className="p-6 bg-[var(--bg-card)] border-t border-[var(--border)] relative z-10" style={{ overflow: 'visible' }}>
           {isEnded ? (
             <div className="text-center text-[var(--text-secondary)] py-4 font-bold border border-dashed border-[var(--border-strong)] rounded-2xl bg-[var(--bg-input)]">
               CONNECTION TERMINATED
             </div>
           ) : (
-            <form onSubmit={sendMessage} className="flex gap-3">
-              <div className="flex-1 relative">
+            <form onSubmit={sendMessage} className="flex items-center gap-3" style={{ overflow: 'visible' }}>
+              <div className="flex-1 min-w-0">
                 <input
                   type="text"
                   value={newMessage}
@@ -311,9 +319,14 @@ export default function MatchDetailPage() {
               <button 
                 type="submit"
                 disabled={!newMessage.trim()}
-                className="btn-primary w-14 h-14 !p-0 rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_var(--shadow)] transition-all transform hover:scale-105 active:scale-95 text-white"
+                className="flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all transform hover:scale-110 active:scale-95"
+                style={{
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(255, 107, 44, 0.3)',
+                }}
               >
-                <Send size={20} className="ml-1" />
+                <Send size={20} />
               </button>
             </form>
           )}

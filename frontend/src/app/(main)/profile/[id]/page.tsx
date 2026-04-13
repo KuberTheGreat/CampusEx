@@ -61,7 +61,7 @@ export default function ProfilePage() {
   if (!profile) return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>User not found</div>;
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
         <button onClick={() => router.back()} className="flex items-center gap-2 mb-6 text-sm font-medium transition" style={{ color: "var(--text-secondary)" }}>
           ← Back
@@ -77,10 +77,10 @@ export default function ProfilePage() {
             </div>
             <div className="p-4 rounded-xl" style={{ background: "var(--bg)" }}>
               <span className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Current Valuation</span>
-              <span className="font-extrabold text-2xl" style={{ color: "var(--primary)" }}>{profile.currentPrice?.toFixed(2) || "10.00"} Au</span>
+              <span className="font-black text-2xl" style={{ color: "var(--accent)" }}>{profile.currentPrice?.toFixed(2) || "10.00"} Au</span>
             </div>
             {String(authUser?.id) !== String(profile.id) && (
-              <button onClick={() => { setTradeMode("BUY"); setTradeShares(1); }} className="btn-primary w-full py-3">
+              <button onClick={() => { setTradeMode("BUY"); setTradeShares(1); }} className="btn-accent w-full py-3">
                 Trade {profile.stockSymbol}
               </button>
             )}
@@ -93,7 +93,7 @@ export default function ProfilePage() {
                 <h2 className="font-bold" style={{ color: "var(--text)" }}>Price History</h2>
                 <div className="flex gap-1">
                   {(["24h", "7d", "30d"] as const).map((r) => (
-                    <button key={r} onClick={() => setChartRange(r)} className="px-3 py-1 rounded-lg text-xs font-bold transition" style={{ background: chartRange === r ? "var(--primary)" : "var(--bg)", color: chartRange === r ? "#fff" : "var(--text-muted)" }}>{r.toUpperCase()}</button>
+                    <button key={r} onClick={() => setChartRange(r)} className="px-3 py-1 rounded-lg text-xs font-bold transition" style={{ background: chartRange === r ? "var(--accent)" : "var(--bg)", color: chartRange === r ? "#fff" : "var(--text-muted)" }}>{r.toUpperCase()}</button>
                   ))}
                 </div>
               </div>

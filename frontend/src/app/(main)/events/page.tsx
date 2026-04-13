@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Clock, Users, ArrowUpRight, ArrowDownRight, AlertCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { IconEvents, IconLightning } from "@/components/Icons";
 import Avatar from "@/components/Avatar";
 import toast from "react-hot-toast";
 
@@ -81,15 +82,20 @@ export default function EventsBidding() {
   const resolvedEvents = events.filter(e => e.status === "Resolved");
 
   return (
-    <div className="min-h-screen p-6" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold" style={{ color: "var(--text)" }}>Live Event Bidding</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Place your stakes on ongoing campus events and grow your portfolio.</p>
+            <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
+              <IconEvents size={32} color="var(--accent)" />
+              Live Events
+            </h1>
+            <p className="text-sm mt-1 ml-11" style={{ color: "var(--text-secondary)" }}>stake your aura on campus happenings</p>
           </div>
           <div className="card px-5 py-3 flex items-center gap-3">
-            <span className="text-lg">✨</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-soft)" }}>
+              <IconLightning size={18} color="var(--accent)" />
+            </div>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Your AURA</div>
               <div className="text-lg font-extrabold" style={{ color: "var(--primary)" }}>{user?.auraCoins !== undefined ? Number(user.auraCoins).toFixed(2) : "0.00"}</div>
