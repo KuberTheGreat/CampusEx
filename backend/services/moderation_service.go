@@ -27,9 +27,11 @@ type ModerationResult struct {
 // ── Groq constants for the moderation engine ────────────────────────────────
 
 const (
-	moderatorTextModel   = "llama-3.1-8b-instant"         // Fast, cheap text moderation
-	moderatorVisionModel = "llama-3.2-11b-vision-preview" // Vision model for images/frames
-	moderatorEndpoint    = "https://api.groq.com/openai/v1/chat/completions"
+	// Llama 4 Scout: current production multimodal model (replaces decommissioned llama-3.2-11b-vision-preview)
+	moderatorVisionModel = "meta-llama/llama-4-scout-17b-16e-instruct"
+	// Fast text moderation — same model used by main trading LLM, cheap and instant
+	moderatorTextModel = "llama-3.1-8b-instant"
+	moderatorEndpoint  = "https://api.groq.com/openai/v1/chat/completions"
 )
 
 const moderationSystemPrompt = `You are a strict Trust & Safety content moderator for a university social platform.
