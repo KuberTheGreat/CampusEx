@@ -29,12 +29,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserContextType | null>(null);
 
   useEffect(() => {
-    // 1. Inject Global Fetch Interceptor to attach JWT securely on client side
+    // 1. Inject Global Fetch Interceptor (once, with cleanup)
     if (typeof window !== "undefined") {
       const originalFetch = window.fetch;
       window.fetch = async (...args) => {
         let [resource, config] = args;
-        
+
         let url = "";
         if (typeof resource === "string") url = resource;
         else if (resource instanceof URL) url = resource.toString();
@@ -51,6 +51,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         return originalFetch(resource, config);
+      };
+
+      // Cleanup: restore original fetch on unmount to prevent stacking in StrictMode
+      return () => {
+        window.fetch = originalFetch;
       };
     }
 

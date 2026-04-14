@@ -229,7 +229,7 @@ export default function CreateNewsPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-4 md:p-6">
       <div className="card max-w-lg w-full p-8 relative animate-fade-in">
         <Link href="/news" className="text-sm font-medium mb-6 inline-block transition" style={{ color: "var(--accent)" }}>
           ← Back to News Feed
@@ -268,10 +268,10 @@ export default function CreateNewsPage() {
 
             {/* Mention Tracked Chips */}
             {mentions.size > 0 && (
-              <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-white/10 bg-black/20">
-                <span className="text-xs text-gray-400 my-auto uppercase tracking-wider font-semibold mr-2">Tagged:</span>
+              <div className="flex flex-wrap gap-2 p-3 rounded-xl" style={{ background: "var(--bg-input)", border: "1px solid var(--border)" }}>
+                <span className="text-xs my-auto uppercase tracking-wider font-semibold mr-2" style={{ color: "var(--text-muted)" }}>Tagged:</span>
                 {Array.from(mentions.entries()).map(([name, u]) => (
-                  <div key={u.id} className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-full text-sm">
+                  <div key={u.id} className="flex items-center gap-2 px-3 py-1 rounded-full text-sm" style={{ background: "var(--accent-soft)", border: "1px solid var(--border)", color: "var(--accent)" }}>
                     <span>@{name} <span className="opacity-60 text-xs">${u.stockSymbol}</span></span>
                     <button type="button" onClick={() => handleRemoveMention(name)} className="hover:text-red-400 font-bold ml-1">&times;</button>
                   </div>
@@ -291,7 +291,7 @@ export default function CreateNewsPage() {
 
               {/* Mentions Dropdown */}
               {showDropdown && searchResults.length > 0 && (
-                <div ref={dropdownRef} className="absolute z-50 mt-1 w-64 rounded-xl border border-white/10 shadow-2xl overflow-hidden backdrop-blur-xl bg-[#1a1a1a]/95">
+                <div ref={dropdownRef} className="absolute z-50 mt-1 w-64 rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
                   {searchResults.map(u => (
                     <button
                       key={u.id}
@@ -299,8 +299,8 @@ export default function CreateNewsPage() {
                       onClick={() => handleSelectUser(u)}
                       className="w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/5 last:border-0 flex items-center justify-between"
                     >
-                      <span className="font-semibold text-gray-200">{u.name}</span>
-                      <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">${u.stockSymbol}</span>
+                      <span className="font-semibold" style={{ color: "var(--text)" }}>{u.name}</span>
+                      <span className="text-xs font-mono px-2 py-1 rounded" style={{ color: "var(--accent)", background: "var(--accent-soft)" }}>${u.stockSymbol}</span>
                     </button>
                   ))}
                 </div>
@@ -309,7 +309,7 @@ export default function CreateNewsPage() {
 
             <div>
               <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Evidence (Optional)</label>
-              <div className="border border-dashed p-4 rounded-xl hover:border-accent transition-colors bg-white relative" style={{ borderColor: 'var(--border)' }}>
+              <div className="border border-dashed p-4 rounded-xl transition-colors relative" style={{ borderColor: 'var(--border)', background: 'var(--bg-input)' }}>
                 <input
                   type="file"
                   accept="image/*,video/*,.pdf"

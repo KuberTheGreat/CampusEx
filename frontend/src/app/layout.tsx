@@ -6,8 +6,19 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "CampusEx - Virtual Economy",
-  description: "Transform everyday college life into a dynamic virtual economy. Complete tasks, build credibility, and navigate the market.",
+  title: "CampusEx - Campus Stock Exchange",
+  description: "Trade shares of your campus peers, bid on profiles, stake AURA on live events — CampusEx transforms your college into a dynamic virtual economy.",
+  openGraph: {
+    title: "CampusEx - Campus Stock Exchange",
+    description: "Trade people like stocks. Your campus, your market.",
+    type: "website",
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

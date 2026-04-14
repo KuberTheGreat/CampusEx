@@ -129,11 +129,12 @@ export default function Sidebar() {
 
       {/* ─── MOBILE BOTTOM NAV (hidden on desktop) ─── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-2 py-2 safe-area-pb"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-2 py-2"
         style={{
           backgroundColor: "var(--bg-card)",
           borderTop: "1px solid var(--border)",
           boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+          paddingBottom: "max(8px, env(safe-area-inset-bottom))",
         }}
       >
         {mobileLinks.map((link) => {
