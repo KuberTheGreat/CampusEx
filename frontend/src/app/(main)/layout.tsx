@@ -24,13 +24,14 @@ export default function MainLayout({
     }
   }, [router]);
 
-  if (!authorized) return null; // Prevent flash of unauthorized content
+  if (!authorized) return null;
 
   return (
     <div className="flex min-h-screen relative" style={{ background: "var(--bg)" }}>
       <DecorativeBackground />
       <Sidebar />
-      <main className="flex-1 ml-[68px] relative z-10 min-h-screen overflow-x-hidden transition-all duration-300">
+      {/* Desktop: offset for sidebar. Mobile: no offset, but add bottom padding for nav bar */}
+      <main className="flex-1 md:ml-[68px] relative z-10 min-h-screen overflow-x-hidden transition-all duration-300 pb-[72px] md:pb-0">
         <PageTransition>
           {children}
         </PageTransition>
