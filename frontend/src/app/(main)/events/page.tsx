@@ -82,7 +82,7 @@ export default function EventsBidding() {
   const resolvedEvents = events.filter(e => e.status === "Resolved");
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>

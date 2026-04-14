@@ -62,7 +62,7 @@ export default function ProfilePage() {
   if (!profile) return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>User not found</div>;
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in">
+    <div className="min-h-screen p-4 md:p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
         <button onClick={() => router.back()} className="flex items-center gap-2 mb-6 text-sm font-medium transition" style={{ color: "var(--text-secondary)" }}>
           ← Back

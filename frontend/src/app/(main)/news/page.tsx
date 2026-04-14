@@ -170,11 +170,11 @@ export default function NewsPage() {
   };
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in">
+    <div className="min-h-screen p-4 md:p-6 animate-fade-in">
       <div className="max-w-4xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
+          <h1 className="text-2xl md:text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
               <IconNews size={32} color="var(--accent)" />
               Campus Tea
             </h1>

@@ -50,11 +50,11 @@ export default function ProfileBiddingDashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden" style={{ color: "var(--text)" }}>
+    <div className="min-h-screen p-4 md:p-6 relative overflow-hidden" style={{ color: "var(--text)" }}>
       <div className="max-w-6xl mx-auto z-10 relative">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-4xl font-black mb-2 flex items-center gap-3" style={{ color: "var(--text)" }}>
+            <h1 className="text-2xl md:text-4xl font-black mb-2 flex items-center gap-3" style={{ color: "var(--text)" }}>
               <IconHeart size={36} color="var(--accent)" />
               Profile Bidding
             </h1>
