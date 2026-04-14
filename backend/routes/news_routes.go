@@ -20,6 +20,8 @@ func RegisterNewsRoutes(router *gin.RouterGroup) {
 		secured.Use(UserAuthMiddleware())
 		secured.POST("", createNews)
 		secured.POST("/:id/vote", voteNews)
+		news.GET("/user-votes/:userId", getUserNewsVotes)
+		news.POST("/:id/vote", voteNews)
 	}
 }
 
@@ -146,4 +148,18 @@ func voteNews(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Vote recorded successfully"})
+}
+
+func getUserNewsVotes(c *gin.Context) {
+	userId := c.Param("userId")
+	var votes []models.Vote
+	if err := database.DB.Where("user_id = ?", userId).Find(&votes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch votes"})
+		return
+	}
+	var votedNewsIds []uint
+	for _, v := range votes {
+		votedNewsIds = append(votedNewsIds, v.NewsID)
+	}
+	c.JSON(http.StatusOK, gin.H{"votedNewsIds": votedNewsIds})
 }

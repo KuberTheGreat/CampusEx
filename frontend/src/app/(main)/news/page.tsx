@@ -92,11 +92,11 @@ function MentionContent({ content, impacts }: { content: string; impacts: NewsIm
         <Link
           key={match.index}
           href={`/profile/${subject.id}`}
-          className="inline-flex items-center gap-1 font-semibold text-emerald-400 hover:text-white bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/20 hover:border-emerald-400/50 px-2 py-0.5 rounded-full text-sm transition-all duration-150 mx-0.5"
+          className="inline-flex items-center gap-1 font-semibold text-emerald-800 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-white bg-emerald-200 dark:bg-emerald-500/15 hover:bg-emerald-300 dark:hover:bg-emerald-500/30 border border-emerald-300 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-400/50 px-2 py-0.5 rounded-full text-sm transition-all duration-150 mx-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           @{mentionedName}
-          <span className="text-[10px] text-emerald-600 font-bold">${subject.stockSymbol}</span>
+          <span className="text-[10px] text-emerald-900 dark:text-emerald-600 font-bold">${subject.stockSymbol}</span>
         </Link>
       );
     } else {
@@ -123,8 +123,10 @@ export default function NewsPage() {
   const { user } = useAuth();
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [votedNewsIds, setVotedNewsIds] = useState<Set<number>>(new Set());
 
   useEffect(() => { fetchNews(); }, []);
+  useEffect(() => { if (user?.id) fetchUserVotes(); }, [user?.id]);
 
   const fetchNews = async () => {
     try {
@@ -134,14 +136,29 @@ export default function NewsPage() {
     finally { setLoading(false); }
   };
 
+  const fetchUserVotes = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/news/user-votes/${user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setVotedNewsIds(new Set(data.votedNewsIds || []));
+      }
+    } catch { }
+  };
+
   const handleVote = async (newsId: number, isConfirmed: boolean) => {
     if (!user?.id) return toast.error("Please log in first.");
     try {
-      const res = await fetch(`/api/news/${newsId}/vote`, {
+      const res = await fetch(`http://localhost:8080/api/news/${newsId}/vote`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, isConfirmed }),
       });
-      if (res.ok) { toast.success("Vote recorded!"); fetchNews(); }
+      if (res.ok) {
+        toast.success("Vote recorded!");
+        setVotedNewsIds(prev => new Set(prev).add(newsId));
+        fetchNews();
+      }
       else { const d = await res.json(); toast.error("Error: " + d.error); }
     } catch { toast.error("Failed to submit vote"); }
   };
@@ -243,10 +260,18 @@ export default function NewsPage() {
                   )}
 
                   {/* Vote buttons */}
-                  {news.status === "PENDING" && (
+                  {news.status === "PENDING" && !votedNewsIds.has(news.id) && (
                     <div className="pl-[52px] flex gap-3">
                       <button onClick={() => handleVote(news.id, true)} className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all" style={{ background: "rgba(52,199,89,0.08)", color: "var(--accent-green)", border: "1px solid rgba(52,199,89,0.2)" }}>✓ Confirm</button>
                       <button onClick={() => handleVote(news.id, false)} className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm transition-all" style={{ background: "rgba(255,59,48,0.08)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.2)" }}>✗ Deny</button>
+                    </div>
+                  )}
+
+                  {news.status === "PENDING" && votedNewsIds.has(news.id) && (
+                    <div className="pl-[52px] mt-3">
+                      <div className="text-sm font-semibold p-3 rounded-xl border border-dashed border-[var(--border-strong)] text-[var(--text-muted)] text-center">
+                        ✓ Vote already recorded.
+                      </div>
                     </div>
                   )}
 
