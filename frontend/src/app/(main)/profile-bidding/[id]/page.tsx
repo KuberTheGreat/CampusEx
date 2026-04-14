@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Clock, ShieldCheck, XCircle, MessagesSquare, CheckCircle, ArrowLeft } from "lucide-react";
 import Avatar from "@/components/Avatar";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function ProfileAuctionDetails() {
   const { user } = useAuth();
@@ -47,9 +48,9 @@ export default function ProfileAuctionDetails() {
   const activePendingBidIndex = topBids.findIndex(b => b.status === "PENDING");
 
   const placeBid = async () => {
-    if (!user) return alert("Log in first");
-    if (bidAmount <= highestBid) return alert(`Bid must be higher than current highest (${highestBid})`);
-    if (bidAmount > (user.auraCoins || 0)) return alert("Insufficient AURA balance");
+    if (!user) return toast.error("Log in first");
+    if (bidAmount <= highestBid) return toast.error(`Bid must be higher than current highest (${highestBid})`);
+    if (bidAmount > (user.auraCoins || 0)) return toast.error("Insufficient AURA balance");
 
     try {
       const res = await fetch(`/api/profile-bids/auction/${id}/bid`, {
@@ -63,13 +64,13 @@ export default function ProfileAuctionDetails() {
       });
 
       if (res.ok) {
-        alert("Bid placed successfully!");
+        toast.success("Bid placed successfully!");
         setBidAmount(Math.max((bidAmount + 50), 100));
         setBidMessage("");
         fetchAuctionDetails();
       } else {
         const error = await res.json();
-        alert(`Failed: ${error.error}`);
+        toast.error(`Failed: ${error.error}`);
       }
     } catch (err) {
       console.error(err);
@@ -89,11 +90,11 @@ export default function ProfileAuctionDetails() {
       });
 
       if (res.ok) {
-        alert(`Bid ${action}ED successfully.`);
+        toast.success(`Bid ${action}ED successfully.`);
         fetchAuctionDetails();
       } else {
         const error = await res.json();
-        alert(`Failed: ${error.error}`);
+        toast.error(`Failed: ${error.error}`);
       }
     } catch (err) {
       console.error(err);

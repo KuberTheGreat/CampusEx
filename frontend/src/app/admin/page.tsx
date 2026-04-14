@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -22,11 +23,11 @@ export default function AdminLogin() {
         router.push("/admin/dashboard");
       } else {
         const err = await res.json();
-        alert("Access Denied: " + err.error);
+        toast.error("Access Denied: " + err.error);
       }
     } catch(err) {
       console.error(err);
-      alert("Failed to connect to backend");
+      toast.error("Failed to connect to backend");
     }
   };
 

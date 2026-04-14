@@ -358,15 +358,15 @@ export default function AdminDashboard() {
       });
 
       if (res.ok) {
-        alert("Profile Auction Launched Successfully!");
+        toast.success("Profile Auction Launched Successfully!");
         setSelectedAuctionUser(null);
       } else {
         const d = await res.json();
-        alert("Launch failed: " + d.error);
+        toast.error("Launch failed: " + d.error);
       }
     } catch (e) {
       console.error(e);
-      alert("Error reaching server");
+      toast.error("Error reaching server");
     }
   };
 

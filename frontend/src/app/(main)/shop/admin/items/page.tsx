@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function ShopAdmin() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function ShopAdmin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminEmail) {
-        alert("Please provide an Admin Email for verification.");
+        toast.error("Please provide an Admin Email for verification.");
         return;
     }
     
@@ -36,15 +37,15 @@ export default function ShopAdmin() {
       });
 
       if (res.ok) {
-        alert("Perk added successfully to the shop!");
+        toast.success("Perk added successfully to the shop!");
         router.push("/shop");
       } else {
         const err = await res.json();
-        alert(`Error: ${err.error || "Failed to create item"}`);
+        toast.error(`Error: ${err.error || "Failed to create item"}`);
       }
     } catch (error) {
       console.error(error);
-      alert("Failed to connect to backend.");
+      toast.error("Failed to connect to backend.");
     } finally {
       setLoading(false);
     }
