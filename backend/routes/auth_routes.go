@@ -8,6 +8,7 @@ import (
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
+	"github.com/CampusEx/backend/services"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/idtoken"
 )
@@ -75,8 +76,15 @@ func handleGoogleCallback(c *gin.Context) {
 		return
 	}
 
+	token, err := services.GenerateUserToken(user.ID, user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "JWT creation failed"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":       "Login successful",
+		"token":         token,
 		"needs_profile": user.StockSymbol == "",
 		"user": gin.H{
 			"id":               user.ID,

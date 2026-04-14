@@ -9,6 +9,7 @@ require (
 	google.golang.org/api v0.275.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
+	github.com/golang-jwt/jwt/v5 v5.2.1
 )
 
 require (

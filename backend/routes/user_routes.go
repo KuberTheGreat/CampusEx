@@ -10,6 +10,7 @@ import (
 
 	"github.com/CampusEx/backend/database"
 	"github.com/CampusEx/backend/models"
+	"github.com/CampusEx/backend/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -86,8 +87,11 @@ func createProfile(c *gin.Context) {
 		}
 	}
 
+	token, _ := services.GenerateUserToken(user.ID, user.Email)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Profile created successfully",
+		"token":   token,
 		"user":    user,
 	})
 }
@@ -114,8 +118,11 @@ func scheduleIPO(c *gin.Context) {
 	user.IsListed = true
 	database.DB.Save(&user)
 
+	token, _ := services.GenerateUserToken(user.ID, user.Email)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "IPO scheduled successfully",
+		"token":   token,
 		"user":    user,
 	})
 }

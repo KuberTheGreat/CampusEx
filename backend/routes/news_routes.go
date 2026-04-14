@@ -14,14 +14,16 @@ import (
 func RegisterNewsRoutes(router *gin.RouterGroup) {
 	news := router.Group("/news")
 	{
-		news.POST("", createNews)
 		news.GET("", getNews)
-		news.POST("/:id/vote", voteNews)
+		
+		secured := news.Group("")
+		secured.Use(UserAuthMiddleware())
+		secured.POST("", createNews)
+		secured.POST("/:id/vote", voteNews)
 	}
 }
 
 type CreateNewsInput struct {
-	PublisherID uint   `json:"publisherId" binding:"required"`
 	SubjectIDs  []uint `json:"subjectIds" binding:"required"`
 	Content     string `json:"content" binding:"required"`
 	EvidenceURL string `json:"evidenceUrl"`
@@ -52,8 +54,10 @@ func createNews(c *gin.Context) {
 		return
 	}
 
+	publisherID := c.MustGet("userID").(uint)
+
 	news := models.News{
-		PublisherID: input.PublisherID,
+		PublisherID: publisherID,
 		Content:     input.Content,
 		EvidenceURL: input.EvidenceURL,
 		Status:      "PENDING",
@@ -98,7 +102,6 @@ func getNews(c *gin.Context) {
 }
 
 type VoteInput struct {
-	UserID      uint `json:"userId" binding:"required"`
 	IsConfirmed bool `json:"isConfirmed"`
 }
 
@@ -117,6 +120,8 @@ func voteNews(c *gin.Context) {
 		return
 	}
 
+	userID := c.MustGet("userID").(uint)
+
 	if news.Status != "PENDING" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Voting is closed for this news"})
 		return
@@ -124,14 +129,14 @@ func voteNews(c *gin.Context) {
 
 	// Check if user has already voted
 	var existingVote models.Vote
-	if err := database.DB.Where("news_id = ? AND user_id = ?", news.ID, input.UserID).First(&existingVote).Error; err == nil {
+	if err := database.DB.Where("news_id = ? AND user_id = ?", news.ID, userID).First(&existingVote).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User has already voted on this news"})
 		return
 	}
 
 	vote := models.Vote{
 		NewsID:      news.ID,
-		UserID:      input.UserID,
+		UserID:      userID,
 		IsConfirmed: input.IsConfirmed,
 	}
 

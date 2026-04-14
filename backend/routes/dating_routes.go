@@ -12,6 +12,7 @@ import (
 
 func RegisterDatingRoutes(router *gin.RouterGroup) {
 	dating := router.Group("/dating")
+	dating.Use(UserAuthMiddleware())
 	{
 		dating.GET("/matches", getMyMatches)
 		dating.GET("/matches/:matchId", getMatchDetails)
@@ -24,17 +25,13 @@ func RegisterDatingRoutes(router *gin.RouterGroup) {
 
 // getMyMatches returns all DatingMatches where the requesting user is User1 or User2.
 func getMyMatches(c *gin.Context) {
-	userIDStr := c.Query("userId")
-	if userIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "userId query param required"})
-		return
-	}
+	userID := c.MustGet("userID").(uint)
 
 	var matches []models.DatingMatch
 	if err := database.DB.
 		Preload("User1").
 		Preload("User2").
-		Where("user1_id = ? OR user2_id = ?", userIDStr, userIDStr).
+		Where("user1_id = ? OR user2_id = ?", userID, userID).
 		Order("created_at DESC").
 		Find(&matches).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch matches"})
@@ -47,7 +44,7 @@ func getMyMatches(c *gin.Context) {
 // getMatchDetails returns full match info with both users' traits fully revealed.
 func getMatchDetails(c *gin.Context) {
 	matchID := c.Param("matchId")
-	userIDStr := c.Query("userId")
+	userID := c.MustGet("userID").(uint)
 
 	var match models.DatingMatch
 	if err := database.DB.
@@ -59,15 +56,9 @@ func getMatchDetails(c *gin.Context) {
 	}
 
 	// Verify requesting user is a participant
-	if userIDStr != "" {
-		userID, err := strconv.ParseUint(userIDStr, 10, 32)
-		if err == nil {
-			uid := uint(userID)
-			if match.User1ID != uid && match.User2ID != uid {
-				c.JSON(http.StatusForbidden, gin.H{"error": "You are not part of this match"})
-				return
-			}
-		}
+	if match.User1ID != userID && match.User2ID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not part of this match"})
+		return
 	}
 
 	// For matched users, all traits (including hidden) are intentionally exposed.
@@ -92,7 +83,6 @@ func getMatchChat(c *gin.Context) {
 }
 
 type SendMessageInput struct {
-	SenderID uint   `json:"senderId" binding:"required"`
 	Text     string `json:"text" binding:"required"`
 }
 
@@ -111,14 +101,16 @@ func sendMatchMessage(c *gin.Context) {
 		return
 	}
 
-	if match.User1ID != input.SenderID && match.User2ID != input.SenderID {
+	senderID := c.MustGet("userID").(uint)
+
+	if match.User1ID != senderID && match.User2ID != senderID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not part of this match"})
 		return
 	}
 
 	msg := models.ChatMessage{
 		MatchID:  match.ID,
-		SenderID: input.SenderID,
+		SenderID: senderID,
 		Text:     input.Text,
 	}
 
@@ -132,7 +124,6 @@ func sendMatchMessage(c *gin.Context) {
 }
 
 type RatePartnerInput struct {
-	FromUserID uint `json:"fromUserId" binding:"required"`
 	Score      int  `json:"score" binding:"required,min=1,max=5"`
 }
 
@@ -154,14 +145,16 @@ func rateMatchPartner(c *gin.Context) {
 	}
 
 	var toUserID uint
-	if match.User1ID == input.FromUserID {
+	fromUserID := c.MustGet("userID").(uint)
+
+	if match.User1ID == fromUserID {
 		if match.User1Rated {
 			c.JSON(http.StatusConflict, gin.H{"error": "You have already submitted a rating for this match"})
 			return
 		}
 		toUserID = match.User2ID
 		match.User1Rated = true
-	} else if match.User2ID == input.FromUserID {
+	} else if match.User2ID == fromUserID {
 		if match.User2Rated {
 			c.JSON(http.StatusConflict, gin.H{"error": "You have already submitted a rating for this match"})
 			return
@@ -175,7 +168,7 @@ func rateMatchPartner(c *gin.Context) {
 
 	// Prevent duplicate ratings
 	var existingRating models.MatchRating
-	if database.DB.Where("match_id = ? AND from_user_id = ?", match.ID, input.FromUserID).First(&existingRating).Error == nil {
+	if database.DB.Where("match_id = ? AND from_user_id = ?", match.ID, fromUserID).First(&existingRating).Error == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Rating already submitted"})
 		return
 	}
@@ -183,7 +176,7 @@ func rateMatchPartner(c *gin.Context) {
 	// Persist the rating record
 	rating := models.MatchRating{
 		MatchID:    match.ID,
-		FromUserID: input.FromUserID,
+		FromUserID: fromUserID,
 		ToUserID:   toUserID,
 		Score:      input.Score,
 	}
@@ -215,7 +208,6 @@ func rateMatchPartner(c *gin.Context) {
 }
 
 type GiftInput struct {
-	FromUserID uint    `json:"fromUserId" binding:"required"`
 	Amount     float64 `json:"amount" binding:"required,min=1"`
 }
 
@@ -235,9 +227,11 @@ func giftAuraCoins(c *gin.Context) {
 	}
 
 	var toUserID uint
-	if match.User1ID == input.FromUserID {
+	fromUserID := c.MustGet("userID").(uint)
+
+	if match.User1ID == fromUserID {
 		toUserID = match.User2ID
-	} else if match.User2ID == input.FromUserID {
+	} else if match.User2ID == fromUserID {
 		toUserID = match.User1ID
 	} else {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You are not part of this match"})
@@ -246,7 +240,7 @@ func giftAuraCoins(c *gin.Context) {
 
 	err := database.DB.Transaction(func(tx *gorm.DB) error {
 		var sender models.User
-		if err := tx.First(&sender, input.FromUserID).Error; err != nil {
+		if err := tx.First(&sender, fromUserID).Error; err != nil {
 			return err
 		}
 		if sender.AuraCoins < input.Amount {

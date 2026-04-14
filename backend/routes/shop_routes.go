@@ -14,8 +14,11 @@ func RegisterShopRoutes(router *gin.RouterGroup) {
 	shop := router.Group("/shop")
 	{
 		shop.GET("/items", getShopItems)
-		shop.POST("/buy/:id", buyShopItem)
 		shop.GET("/inventory/:userId", getUserInventory)
+
+		secured := shop.Group("")
+		secured.Use(UserAuthMiddleware())
+		secured.POST("/buy/:id", buyShopItem)
 	}
 
 	// Centralized Admin Shop Routes
@@ -60,16 +63,6 @@ func buyShopItem(c *gin.Context) {
 		return
 	}
 
-	// Assuming user ID is passed in body for simplicity, or we could get it from a token in a real app.
-	// For this prototype, let's take `userId` from JSON body: {"userId": 1}
-	var req struct {
-		UserID uint `json:"userId" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
-		return
-	}
-
 	tx := database.DB.Begin()
 
 	// 1. Get the shop item
@@ -81,8 +74,9 @@ func buyShopItem(c *gin.Context) {
 	}
 
 	// 2. Get the user
+	userID := c.MustGet("userID").(uint)
 	var user models.User
-	if err := tx.First(&user, req.UserID).Error; err != nil {
+	if err := tx.First(&user, userID).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return

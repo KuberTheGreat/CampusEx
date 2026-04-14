@@ -8,6 +8,7 @@ type UserContextType = {
   name: string;
   stockSymbol: string;
   auraCoins: number;
+  token?: string; // Add token field to capture from API
 };
 
 type AuthContextType = {
@@ -28,12 +29,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserContextType | null>(null);
 
   useEffect(() => {
-    // Restore session on mount
+    // 1. Inject Global Fetch Interceptor to attach JWT securely on client side
+    if (typeof window !== "undefined") {
+      const originalFetch = window.fetch;
+      window.fetch = async (...args) => {
+        let [resource, config] = args;
+        
+        let url = "";
+        if (typeof resource === "string") url = resource;
+        else if (resource instanceof URL) url = resource.toString();
+        else if (resource instanceof Request) url = resource.url;
+
+        if (url.startsWith("/api/")) {
+          const token = localStorage.getItem("campusex_token");
+          if (token) {
+            config = config || {};
+            config.headers = {
+              ...config.headers,
+              Authorization: `Bearer ${token}`,
+            };
+          }
+        }
+        return originalFetch(resource, config);
+      };
+    }
+
+    // 2. Restore session on mount
     const storedUser = localStorage.getItem("campusex_user");
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
       setUser(parsed);
-      // Background refresh immediately
+      const savedToken = localStorage.getItem("campusex_token");
+      
+      // Background refresh immediately using intercepted fetch
       fetch(`/api/user/profile/${parsed.id}`)
         .then(res => res.json())
         .then(data => {
@@ -48,11 +76,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = (userData: UserContextType) => {
     setUser(userData);
     localStorage.setItem("campusex_user", JSON.stringify(userData));
+    if (userData.token) {
+      localStorage.setItem("campusex_token", userData.token);
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("campusex_user");
+    localStorage.removeItem("campusex_token");
   };
 
   const refreshUser = async () => {

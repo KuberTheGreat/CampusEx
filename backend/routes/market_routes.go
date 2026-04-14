@@ -15,9 +15,12 @@ func RegisterMarketRoutes(router *gin.RouterGroup) {
 	market := router.Group("/market")
 	{
 		market.GET("/leaderboard", getLeaderboard)
-		market.POST("/trade", executeTrade)
 		market.GET("/stocks", getAllStocks)
 		market.GET("/stocks/:userId/history", getStockHistory)
+
+		secured := market.Group("")
+		secured.Use(UserAuthMiddleware())
+		secured.POST("/trade", executeTrade)
 	}
 }
 
@@ -56,7 +59,6 @@ func getLeaderboard(c *gin.Context) {
 }
 
 type TradeRequest struct {
-	BuyerID      uint   `json:"buyerId"`
 	TargetUserID uint   `json:"targetUserId"`
 	Shares       int    `json:"shares"`
 	Type         string `json:"type"` // "BUY" or "SELL"
@@ -69,6 +71,8 @@ func executeTrade(c *gin.Context) {
 		return
 	}
 
+	buyerID := c.MustGet("userID").(uint)
+
 	tx := database.DB.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -77,7 +81,7 @@ func executeTrade(c *gin.Context) {
 	}()
 
 	var buyer models.User
-	if err := tx.First(&buyer, req.BuyerID).Error; err != nil {
+	if err := tx.First(&buyer, buyerID).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusNotFound, gin.H{"error": "Buyer not found"})
 		return

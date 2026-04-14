@@ -16,8 +16,11 @@ func RegisterProfileBiddingRoutes(router *gin.RouterGroup) {
 		api.POST("/admin/auction", createProfileAuction)
 		api.GET("/active", getActiveProfileAuctions)
 		api.GET("/auction/:id", getAuctionDetails)
-		api.POST("/auction/:id/bid", placeProfileBid)
-		api.POST("/auction/:id/resolve", resolveProfileAuction)
+
+		secured := api.Group("")
+		secured.Use(UserAuthMiddleware())
+		secured.POST("/auction/:id/bid", placeProfileBid)
+		secured.POST("/auction/:id/resolve", resolveProfileAuction)
 	}
 }
 
@@ -87,7 +90,6 @@ func getAuctionDetails(c *gin.Context) {
 }
 
 type PlaceBidInput struct {
-	BidderID uint    `json:"bidderId" binding:"required"`
 	Amount   float64 `json:"amount" binding:"required"`
 	Message  string  `json:"message"`
 }
@@ -110,8 +112,10 @@ func placeProfileBid(c *gin.Context) {
 			return gin.Error{Err: gorm.ErrInvalidData, Type: gin.ErrorTypePrivate} // Auction not active
 		}
 
+		bidderID := c.MustGet("userID").(uint)
+
 		var bidder models.User
-		if err := tx.First(&bidder, input.BidderID).Error; err != nil {
+		if err := tx.First(&bidder, bidderID).Error; err != nil {
 			return err
 		}
 
@@ -161,7 +165,6 @@ func placeProfileBid(c *gin.Context) {
 }
 
 type ResolveInput struct {
-	TargetUserID uint   `json:"targetUserId" binding:"required"` // For security
 	Action       string `json:"action" binding:"required"`       // "ACCEPT" or "REJECT"
 	BidID        uint   `json:"bidId" binding:"required"`
 }
@@ -180,7 +183,9 @@ func resolveProfileAuction(c *gin.Context) {
 			return err
 		}
 
-		if auction.TargetUserID != input.TargetUserID {
+		targetUserID := c.MustGet("userID").(uint)
+
+		if auction.TargetUserID != targetUserID {
 			return gin.Error{Err: gorm.ErrInvalidData}
 		}
 

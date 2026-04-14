@@ -16,7 +16,10 @@ func RegisterEventRoutes(router *gin.RouterGroup) {
 		events.GET("/active", getActiveEvents)
 		events.GET("/all", getAllEvents)
 		events.GET("/user-bids/:userId", getUserEventBids)
-		events.POST("/bid", placeEventBid)
+
+		secured := events.Group("")
+		secured.Use(UserAuthMiddleware())
+		secured.POST("/bid", placeEventBid)
 	}
 
 	admin := router.Group("/admin/events")
@@ -76,10 +79,9 @@ func getUserEventBids(c *gin.Context) {
 }
 
 type BidInput struct {
-	EventID       uint   `json:"eventId" binding:"required"`
-	ParticipantID uint   `json:"participantId" binding:"required"`
-	BidderID      uint   `json:"bidderId" binding:"required"` // Should ideally come from auth token in production
-	BidType       string `json:"bidType" binding:"required"`
+	EventID       uint    `json:"eventId" binding:"required"`
+	ParticipantID uint    `json:"participantId" binding:"required"`
+	BidType       string  `json:"bidType" binding:"required"`
 	Amount        float64 `json:"amount" binding:"required,gt=0"`
 }
 
@@ -101,9 +103,11 @@ func placeEventBid(c *gin.Context) {
 			return gorm.ErrInvalidData
 		}
 
+		bidderID := c.MustGet("userID").(uint)
+
 		// Check if user already bid on this participant
 		var count int64
-		tx.Model(&models.EventBid{}).Where("event_id = ? AND participant_id = ? AND bidder_id = ?", input.EventID, input.ParticipantID, input.BidderID).Count(&count)
+		tx.Model(&models.EventBid{}).Where("event_id = ? AND participant_id = ? AND bidder_id = ?", input.EventID, input.ParticipantID, bidderID).Count(&count)
 		if count > 0 {
 			c.JSON(http.StatusConflict, gin.H{"error": "You have already bid on this profile for this event"})
 			return nil // returning nil to not rollback just because of validation, we handle it in response
@@ -112,7 +116,7 @@ func placeEventBid(c *gin.Context) {
 
 		// Deduct amount from user
 		var user models.User
-		if err := tx.First(&user, input.BidderID).Error; err != nil {
+		if err := tx.First(&user, bidderID).Error; err != nil {
 			return err
 		}
 		if user.AuraCoins < input.Amount {
@@ -128,7 +132,7 @@ func placeEventBid(c *gin.Context) {
 		bid := models.EventBid{
 			EventID:       input.EventID,
 			ParticipantID: input.ParticipantID,
-			BidderID:      input.BidderID,
+			BidderID:      bidderID,
 			BidType:       input.BidType,
 			Amount:        input.Amount,
 			Status:        "Pending",

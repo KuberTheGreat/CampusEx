@@ -399,7 +399,7 @@ export default function Home() {
         });
         const data = await res.json();
         if (res.ok) {
-          if (data.needs_profile === false && data.user) { login(data.user); router.push("/dashboard"); }
+          if (data.needs_profile === false && data.user) { login({ ...data.user, token: data.token }); router.push("/dashboard"); }
           else { setEmail(data.email || ""); setName(data.name || ""); setStep(2); }
         } else { alert("Login failed: " + data.error); }
       } catch (err) { console.error("Failed to verify token", err); }
@@ -435,7 +435,7 @@ export default function Home() {
         body: JSON.stringify({ email, ipoDate: parsedDate }),
       });
       const data = await res.json();
-      if (res.ok) { login(data.user); setStep(4); }
+      if (res.ok) { login({ ...data.user, token: data.token }); setStep(4); }
       else { alert("Error scheduling IPO: " + data.error); }
     } catch (err) { console.error(err); }
   };
