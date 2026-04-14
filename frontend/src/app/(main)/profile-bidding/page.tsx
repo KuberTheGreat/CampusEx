@@ -17,7 +17,7 @@ export default function ProfileBiddingDashboard() {
 
   const fetchAuctions = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/profile-bids/active");
+      const res = await fetch("/api/profile-bids/active");
       const data = await res.json();
       if (res.ok && data.auctions) {
         setAuctions(data.auctions);

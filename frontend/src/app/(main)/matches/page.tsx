@@ -20,7 +20,7 @@ export default function MatchesDashboard() {
 
   const fetchMatches = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/dating/matches?userId=${user?.id}`);
+      const res = await fetch(`/api/dating/matches?userId=${user?.id}`);
       const data = await res.json();
       if (res.ok && data.matches) {
         setMatches(data.matches);

@@ -26,7 +26,7 @@ export default function ProfileAuctionDetails() {
 
   const fetchAuctionDetails = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/profile-bids/auction/${id}`);
+      const res = await fetch(`/api/profile-bids/auction/${id}`);
       const data = await res.json();
       if (res.ok) {
         setAuction(data.auction);
@@ -52,7 +52,7 @@ export default function ProfileAuctionDetails() {
     if (bidAmount > (user.auraCoins || 0)) return alert("Insufficient AURA balance");
 
     try {
-      const res = await fetch(`http://localhost:8080/api/profile-bids/auction/${id}/bid`, {
+      const res = await fetch(`/api/profile-bids/auction/${id}/bid`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -78,7 +78,7 @@ export default function ProfileAuctionDetails() {
 
   const resolveAuction = async (bidId: number, action: "ACCEPT" | "REJECT") => {
     try {
-      const res = await fetch(`http://localhost:8080/api/profile-bids/auction/${id}/resolve`, {
+      const res = await fetch(`/api/profile-bids/auction/${id}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

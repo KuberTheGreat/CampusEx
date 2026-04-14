@@ -393,7 +393,7 @@ export default function Home() {
   const handleGoogleLoginSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
       try {
-        const res = await fetch("http://localhost:8080/api/auth/google", {
+        const res = await fetch("/api/auth/google", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: credentialResponse.credential }),
         });
@@ -408,7 +408,7 @@ export default function Home() {
   const handleGoogleLoginError = () => console.error("Google Login Failed");
   const handleDevBypass = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/market/leaderboard");
+      const res = await fetch("/api/market/leaderboard");
       const data = await res.json();
       if (res.ok && data.leaderboard?.length > 0) { login(data.leaderboard[0]); router.push("/dashboard"); }
       else { alert("No users in DB."); }
@@ -418,7 +418,7 @@ export default function Home() {
     e.preventDefault();
     try {
       const traitList = traits.split(",").map(t => t.trim()).filter(t => t.length > 0);
-      const res = await fetch("http://localhost:8080/api/user/profile", {
+      const res = await fetch("/api/user/profile", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name, stockSymbol, traits: traitList }),
       });
@@ -430,7 +430,7 @@ export default function Home() {
     e.preventDefault();
     try {
       const parsedDate = new Date(ipoDate).toISOString();
-      const res = await fetch("http://localhost:8080/api/user/ipo", {
+      const res = await fetch("/api/user/ipo", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, ipoDate: parsedDate }),
       });

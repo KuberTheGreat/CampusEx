@@ -28,7 +28,7 @@ export default function PortfolioPage() {
 
   const fetchPortfolio = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/user/portfolio/${user!.id}`);
+      const res = await fetch(`/api/user/portfolio/${user!.id}`);
       const data = await res.json();
       if (res.ok && data.portfolio) setPortfolio(data.portfolio);
     } catch (err) { console.error(err); }
@@ -37,7 +37,7 @@ export default function PortfolioPage() {
 
   const fetchHistory = async (userId: number) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/market/stocks/${userId}/history?range=7d`);
+      const res = await fetch(`/api/market/stocks/${userId}/history?range=7d`);
       const data = await res.json();
       if (res.ok && data.history?.length > 0) {
         setChartData(data.history.map((h: any) => ({ time: new Date(h.recordedAt).toLocaleString("en-IN", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }), price: parseFloat(h.price.toFixed(2)) })));

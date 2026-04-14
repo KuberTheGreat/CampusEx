@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import Avatar from "@/components/Avatar";
+import toast from "react-hot-toast";
 
 export default function ProfilePage() {
   const { id } = useParams();
@@ -20,20 +21,20 @@ export default function ProfilePage() {
   const executeTrade = async () => {
     if (!authUser?.id || !profile || !tradeMode) return;
     const totalCost = tradeShares * profile.currentPrice;
-    if (tradeMode === "BUY" && totalCost > (authUser.auraCoins || 0)) return alert("Insufficient AURA!");
+    if (tradeMode === "BUY" && totalCost > (authUser.auraCoins || 0)) return toast.error("Insufficient AURA!");
     try {
-      const res = await fetch("http://localhost:8080/api/market/trade", {
+      const res = await fetch("/api/market/trade", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ buyerId: authUser.id, targetUserId: profile.id, shares: tradeShares, type: tradeMode })
       });
-      if (res.ok) { alert(`${tradeMode} of ${tradeShares} shares executed!`); window.location.reload(); }
-      else { const e = await res.json(); alert(`Failed: ${e.error}`); }
+      if (res.ok) { toast.success(`${tradeMode} of ${tradeShares} shares executed!`); window.location.reload(); }
+      else { const e = await res.json(); toast.error(`Failed: ${e.error}`); }
     } catch(err) { console.error(err); }
   };
 
   const fetchHistory = async (userId: number, range: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/market/stocks/${userId}/history?range=${range}`);
+      const res = await fetch(`/api/market/stocks/${userId}/history?range=${range}`);
       const data = await res.json();
       if (res.ok && data.history?.length > 0) {
         setChartData(data.history.map((h: any) => ({
@@ -49,7 +50,7 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/user/profile/${id}`);
+      const res = await fetch(`/api/user/profile/${id}`);
       if (res.ok) { const data = await res.json(); setProfile(data.user); }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }

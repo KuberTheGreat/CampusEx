@@ -6,6 +6,7 @@ import { Text, OrbitControls, Billboard, RoundedBox, Sparkles } from "@react-thr
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import * as THREE from "three";
+import toast from "react-hot-toast";
 
 // ─── PALETTE ───
 const LIGHT_PALETTE = {
@@ -424,7 +425,7 @@ export default function ThreeMarket() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/admin/users");
+      const res = await fetch("/api/admin/users");
       const data = await res.json();
       if (res.ok && data.users) {
         const sorted = data.users.sort((a: any, b: any) => b.currentPrice - a.currentPrice);
@@ -437,7 +438,7 @@ export default function ThreeMarket() {
 
   useEffect(() => {
     if (selectedUser?.id) {
-      fetch(`http://localhost:8080/api/market/stocks/${selectedUser.id}/history?range=7d`)
+      fetch(`/api/market/stocks/${selectedUser.id}/history?range=7d`)
         .then((res) => res.json())
         .then((data) => {
           if (data.history && data.history.length > 0) {
@@ -455,11 +456,11 @@ export default function ThreeMarket() {
     const totalCost = tradeShares * selectedUser.currentPrice;
 
     if (tradeMode === "BUY" && totalCost > (authUser.auraCoins || 0)) {
-      return alert("Insufficient AURA balance!");
+      return toast.error("Insufficient AURA balance!");
     }
 
     try {
-      const res = await fetch("http://localhost:8080/api/market/trade", {
+      const res = await fetch("/api/market/trade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -470,11 +471,11 @@ export default function ThreeMarket() {
         }),
       });
       if (res.ok) {
-        alert(`Successfully executed ${tradeMode} of ${tradeShares} shares!`);
+        toast.success(`Successfully executed ${tradeMode} of ${tradeShares} shares!`);
         window.location.reload();
       } else {
         const error = await res.json();
-        alert(`Trade Failed: ${error.error}`);
+        toast.error(`Trade Failed: ${error.error}`);
       }
     } catch (err) {
       console.error(err);

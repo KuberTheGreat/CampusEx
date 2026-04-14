@@ -41,7 +41,7 @@ export default function MatchDetailPage() {
 
   const fetchMatchDetails = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/dating/matches/${id}?userId=${user?.id}`);
+      const res = await fetch(`/api/dating/matches/${id}?userId=${user?.id}`);
       if (!res.ok) {
         if (res.status === 403) router.push('/matches');
         return;
@@ -57,7 +57,7 @@ export default function MatchDetailPage() {
 
   const fetchChat = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/dating/matches/${id}/chat`);
+      const res = await fetch(`/api/dating/matches/${id}/chat`);
       if (res.ok) {
         const data = await res.json();
         setMessages(data.messages || []);
@@ -72,7 +72,7 @@ export default function MatchDetailPage() {
     if (!newMessage.trim() || !user) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/dating/matches/${id}/chat`, {
+      const res = await fetch(`/api/dating/matches/${id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senderId: user.id, text: newMessage.trim() })
@@ -89,7 +89,7 @@ export default function MatchDetailPage() {
   const submitRating = async (score: number) => {
     if (!user || score < 1 || score > 5) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/dating/matches/${id}/rate`, {
+      const res = await fetch(`/api/dating/matches/${id}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fromUserId: user.id, score })
@@ -113,7 +113,7 @@ export default function MatchDetailPage() {
     if (!user || !giftAmount || isNaN(Number(giftAmount))) return;
     
     try {
-      const res = await fetch(`http://localhost:8080/api/dating/matches/${id}/gift`, {
+      const res = await fetch(`/api/dating/matches/${id}/gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fromUserId: user.id, amount: Number(giftAmount) })

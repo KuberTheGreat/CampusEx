@@ -43,7 +43,7 @@ export default function Dashboard() {
     if (tradeMode === "BUY" && totalCost > (user.auraCoins || 0)) return toast.error("Insufficient AURA!");
     setExecutingTrade(true);
     try {
-      const res = await fetch("http://localhost:8080/api/market/trade", {
+      const res = await fetch("/api/market/trade", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ buyerId: user.id, targetUserId: selectedUser.id, shares: tradeShares, type: tradeMode })
       });
@@ -55,7 +55,7 @@ export default function Dashboard() {
 
   const fetchPriceHistory = async (userId: number, range: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/market/stocks/${userId}/history?range=${range}`);
+      const res = await fetch(`/api/market/stocks/${userId}/history?range=${range}`);
       const data = await res.json();
       if (res.ok && data.history) {
         setChartData(data.history.map((h: any) => ({
@@ -77,14 +77,14 @@ export default function Dashboard() {
   const fetchPortfolio = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/market/portfolio/${user.id}`);
+      const res = await fetch(`/api/user/portfolio/${user.id}`);
       const data = await res.json();
       if (res.ok) setPortfolio(data.portfolio || []);
     } catch { }
   };
 
   const fetchLeaderboard = async () => {
-    let url = `http://localhost:8080/api/market/leaderboard?sortBy=${sortBy}`;
+    let url = `/api/market/leaderboard?sortBy=${sortBy}`;
     if (filterYear) url += `&year=${filterYear}`;
     if (filterTrait) url += `&trait=${filterTrait}`;
     try {
@@ -94,7 +94,7 @@ export default function Dashboard() {
         setLeaderboard(data.leaderboard);
         // Fetch mini charts for all users
         for (const u of data.leaderboard) {
-          fetch(`http://localhost:8080/api/market/stocks/${u.id}/history?range=7d`)
+          fetch(`/api/market/stocks/${u.id}/history?range=7d`)
             .then(r => r.json())
             .then(d => {
               if (d.history?.length >= 2) {

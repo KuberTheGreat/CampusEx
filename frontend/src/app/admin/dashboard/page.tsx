@@ -61,7 +61,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/admin/users");
+      const res = await fetch("/api/admin/users");
       const data = await res.json();
       if (res.ok) setUsers(data.users || []);
     } catch(err) {
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
 
   const fetchEngineStatus = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/admin/price-engine/status");
+      const res = await fetch("/api/admin/price-engine/status");
       const data = await res.json();
       if (res.ok) {
         setEngineInterval(data.intervalSeconds);
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
   const updateEngineInterval = async () => {
     setUpdatingEngine(true);
     try {
-      const res = await fetch("http://localhost:8080/api/admin/price-engine/interval", {
+      const res = await fetch("/api/admin/price-engine/interval", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seconds: Number(newInterval) })
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
 
   const fetchNewsTimerStatus = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/admin/news/duration");
+      const res = await fetch("/api/admin/news/duration");
       const data = await res.json();
       if (res.ok) {
         setNewsTimerDuration(data.durationMinutes);
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
   const updateNewsTimer = async () => {
     setUpdatingNewsTimer(true);
     try {
-      const res = await fetch("http://localhost:8080/api/admin/news/duration", {
+      const res = await fetch("/api/admin/news/duration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ minutes: Number(newNewsTimer) })
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
     if (!confirm(`Are you absolutely sure you want to BAN ${name}? This will soft-delete their account completely.`)) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/user/${id}/ban`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/user/${id}/ban`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Target successfully banned.");
         fetchUsers();
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
   const saveEdits = async () => {
     setSavingUser(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/user/${selectedUser.id}/update`, {
+      const res = await fetch(`/api/admin/user/${selectedUser.id}/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -193,7 +193,7 @@ export default function AdminDashboard() {
 
   const fetchShopItems = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/shop/items");
+      const res = await fetch("/api/shop/items");
       const data = await res.json();
       if (res.ok) setShopItems(data || []);
     } catch(err) { console.error(err); }
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
     
     setSavingPerk(true);
     try {
-      const res = await fetch("http://localhost:8080/api/admin/shop/items", {
+      const res = await fetch("/api/admin/shop/items", {
         method: "POST",
         headers: { 
             "Content-Type": "application/json", 
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
     const admin = JSON.parse(adminData);
 
     try {
-      await fetch(`http://localhost:8080/api/admin/shop/item/${id}`, { 
+      await fetch(`/api/admin/shop/item/${id}`, { 
           method: "DELETE",
           headers: { "X-Admin-Email": admin.email || "" }
       });
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
 
     setSavingPerk(true);
     try {
-        const res = await fetch(`http://localhost:8080/api/admin/shop/item/${selectedPerk.id}`, {
+        const res = await fetch(`/api/admin/shop/item/${selectedPerk.id}`, {
             method: "PUT",
             headers: { 
                 "Content-Type": "application/json", 
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
   // ===== Event Management =====
   const fetchAllEvents = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/admin/events/all");
+      const res = await fetch("/api/admin/events/all");
       const data = await res.json();
       if (res.ok) setEvents(data.events || []);
     } catch(err) { console.error(err); }
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
 
   const fetchEventBids = async (eventId: number) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/admin/events/${eventId}/bids`);
+      const res = await fetch(`/api/admin/events/${eventId}/bids`);
       const data = await res.json();
       if (res.ok) setEventBids(data.bids || []);
     } catch(err) { console.error(err); }
@@ -317,7 +317,7 @@ export default function AdminDashboard() {
         outcome: outcomeSelections[p.id]
       }));
 
-      const res = await fetch(`http://localhost:8080/api/admin/events/${eventId}/resolve`, {
+      const res = await fetch(`/api/admin/events/${eventId}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ outcomes })
@@ -347,7 +347,7 @@ export default function AdminDashboard() {
       const startTime = new Date();
       const endTime = new Date(startTime.getTime() + auctionDuration * 3600 * 1000);
 
-      const res = await fetch("http://localhost:8080/api/profile-bids/admin/auction", {
+      const res = await fetch("/api/profile-bids/admin/auction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

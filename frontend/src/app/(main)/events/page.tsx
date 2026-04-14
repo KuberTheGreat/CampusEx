@@ -21,7 +21,7 @@ export default function EventsBidding() {
 
   const fetchAllEvents = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/events/all");
+      const res = await fetch("/api/events/all");
       const data = await res.json();
       if (res.ok && data.events) setEvents(data.events);
     } catch (err) { console.error(err); }
@@ -30,7 +30,7 @@ export default function EventsBidding() {
   const fetchUserBids = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/events/user-bids/${user.id}`);
+      const res = await fetch(`/api/events/user-bids/${user.id}`);
       const data = await res.json();
       if (res.ok && data.bids) {
         const map: Record<string, string> = {};
@@ -54,7 +54,7 @@ export default function EventsBidding() {
     if (!user?.id || !biddingParticipant || !bidMode) return;
     setPlacingBid(true);
     try {
-      const res = await fetch("http://localhost:8080/api/events/bid", {
+      const res = await fetch("/api/events/bid", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

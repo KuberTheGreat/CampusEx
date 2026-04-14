@@ -26,7 +26,7 @@ export default function ShopAdmin() {
     
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/admin/shop/items", {
+      const res = await fetch("/api/admin/shop/items", {
         method: "POST",
         headers: { 
             "Content-Type": "application/json",

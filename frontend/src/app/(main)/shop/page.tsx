@@ -36,14 +36,14 @@ export default function PowerShop() {
   const fetchInventory = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/shop/inventory/${user.id}`);
+      const res = await fetch(`/api/shop/inventory/${user.id}`);
       if (res.ok) { const data = await res.json(); setInventory(data || []); }
     } catch (e) { console.error(e); }
   };
 
   const fetchItems = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/shop/items");
+      const res = await fetch("/api/shop/items");
       if (res.ok) {
         const data = await res.json();
         if (data.length === 0) {
@@ -63,7 +63,7 @@ export default function PowerShop() {
     if (!user) return;
     if (auraCoins < item.price) return toast.error("Not enough Aura Coins!");
     try {
-      const res = await fetch(`http://localhost:8080/api/shop/buy/${item.id}`, {
+      const res = await fetch(`/api/shop/buy/${item.id}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
       });
