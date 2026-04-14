@@ -148,6 +148,10 @@ func AnalyzeNewsImpact(newsContent string) (*AIImpactAnalysis, error) {
 	}
 
 	rawJSON := strings.TrimSpace(groqResp.Choices[0].Message.Content)
+	rawJSON = strings.TrimPrefix(rawJSON, "```json")
+	rawJSON = strings.TrimPrefix(rawJSON, "```")
+	rawJSON = strings.TrimSuffix(rawJSON, "```")
+	rawJSON = strings.TrimSpace(rawJSON)
 
 	// ── Debug: show exactly what Groq returned ───────────────────────────────
 	log.Printf("[AI] Raw Groq response:\n%s\n", rawJSON)
