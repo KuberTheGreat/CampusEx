@@ -78,13 +78,16 @@ func ModerateAll(textContent string, evidenceURL string) ModerationResult {
 	lower := strings.ToLower(evidenceURL)
 	switch {
 	case isImageURL(lower):
+		log.Printf("[Moderation] Detected IMAGE evidence: %s\n", evidenceURL)
 		return moderateImage(apiKey, evidenceURL)
 	case strings.Contains(lower, ".pdf"):
+		log.Printf("[Moderation] Detected PDF evidence: %s\n", evidenceURL)
 		return moderatePDF(apiKey, evidenceURL)
 	case isVideoURL(lower):
+		log.Printf("[Moderation] Detected VIDEO evidence: %s\n", evidenceURL)
 		return moderateVideo(apiKey, evidenceURL)
 	default:
-		log.Printf("[Moderation] Unknown media type for URL: %s — skipping\n", evidenceURL)
+		log.Printf("[Moderation] WARNING: Could not detect media type for URL: %s — treating as SAFE (skipped)\n", evidenceURL)
 		return ModerationResult{Safe: true}
 	}
 }
@@ -99,10 +102,43 @@ func moderateText(apiKey, content string) ModerationResult {
 	})
 }
 
-// ── Image moderation (Groq Vision) ──────────────────────────────────────────
+// ── Image moderation (download → base64 → Groq Vision) ─────────────────────
+//
+// Groq Vision does NOT accept external HTTPS URLs. We must download the image
+// and send it as a base64 data URI. Same approach used for video frames.
 
 func moderateImage(apiKey, imageURL string) ModerationResult {
-	log.Printf("[Moderation] Checking image: %s\n", imageURL)
+	log.Printf("[Moderation] Downloading image for analysis: %s\n", imageURL)
+
+	// Detect extension from URL for MIME type (default jpeg if unknown)
+	mime := "image/jpeg"
+	lower := strings.ToLower(imageURL)
+	switch {
+	case strings.Contains(lower, ".png"):
+		mime = "image/png"
+	case strings.Contains(lower, ".gif"):
+		mime = "image/gif"
+	case strings.Contains(lower, ".webp"):
+		mime = "image/webp"
+	}
+
+	// Download image into memory
+	resp, err := http.Get(imageURL) // #nosec G107
+	if err != nil {
+		log.Printf("[Moderation] Image download failed: %v — passing\n", err)
+		return ModerationResult{Safe: true}
+	}
+	defer resp.Body.Close()
+
+	imgBytes, err := io.ReadAll(resp.Body)
+	if err != nil || len(imgBytes) == 0 {
+		log.Printf("[Moderation] Image read failed: %v — passing\n", err)
+		return ModerationResult{Safe: true}
+	}
+
+	b64 := base64.StdEncoding.EncodeToString(imgBytes)
+	dataURI := fmt.Sprintf("data:%s;base64,%s", mime, b64)
+	log.Printf("[Moderation] Image encoded (%d bytes), sending to vision model\n", len(imgBytes))
 
 	messages := []map[string]interface{}{
 		{
@@ -119,7 +155,7 @@ func moderateImage(apiKey, imageURL string) ModerationResult {
 				{
 					"type": "image_url",
 					"image_url": map[string]string{
-						"url": imageURL,
+						"url": dataURI,
 					},
 				},
 			},
@@ -359,7 +395,7 @@ func doGroqCall(apiKey string, body []byte) ModerationResult {
 	}
 
 	if groqResp.Error != nil {
-		log.Printf("[Moderation] Groq error [%s]: %s\n", groqResp.Error.Code, groqResp.Error.Message)
+		log.Printf("[Moderation] ❌ Groq API error [%s]: %s\nFull raw: %s\n", groqResp.Error.Code, groqResp.Error.Message, string(rawBody))
 		return ModerationResult{Safe: true}
 	}
 
@@ -381,10 +417,16 @@ func doGroqCall(apiKey string, body []byte) ModerationResult {
 // ── Utilities ────────────────────────────────────────────────────────────────
 
 func isImageURL(url string) bool {
+	// Match explicit image extensions
 	for _, ext := range []string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"} {
 		if strings.Contains(url, ext) {
 			return true
 		}
+	}
+	// Match Cloudinary image upload paths (no extension in URL)
+	// e.g. https://res.cloudinary.com/xxx/image/upload/v123/campusex_evidence/abc
+	if strings.Contains(url, "cloudinary.com") && strings.Contains(url, "/image/upload/") {
+		return true
 	}
 	return false
 }
@@ -394,6 +436,10 @@ func isVideoURL(url string) bool {
 		if strings.Contains(url, ext) {
 			return true
 		}
+	}
+	// Cloudinary video paths
+	if strings.Contains(url, "cloudinary.com") && strings.Contains(url, "/video/upload/") {
+		return true
 	}
 	return false
 }
