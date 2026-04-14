@@ -139,7 +139,7 @@ export default function NewsPage() {
   const fetchUserVotes = async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch(`http://localhost:8080/api/news/user-votes/${user.id}`);
+      const res = await fetch(`/api/news/user-votes`);
       if (res.ok) {
         const data = await res.json();
         setVotedNewsIds(new Set(data.votedNewsIds || []));
@@ -150,7 +150,7 @@ export default function NewsPage() {
   const handleVote = async (newsId: number, isConfirmed: boolean) => {
     if (!user?.id) return toast.error("Please log in first.");
     try {
-      const res = await fetch(`http://localhost:8080/api/news/${newsId}/vote`, {
+      const res = await fetch(`/api/news/${newsId}/vote`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, isConfirmed }),
       });
