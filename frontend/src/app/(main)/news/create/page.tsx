@@ -16,6 +16,16 @@ export default function CreateNewsPage() {
   const [error, setError] = useState("");
   const [moderationBlocked, setModerationBlocked] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [fileSizeError, setFileSizeError] = useState(""); // instant client-side file guard
+
+  const MAX_FILE_MB = 10;
+  const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
 
   // Multi-phase submission tracking
   type PublishPhase = "idle" | "uploading" | "moderating" | "publishing";
@@ -301,21 +311,56 @@ export default function CreateNewsPage() {
               <div className="border border-dashed border-white/20 p-4 rounded-xl hover:border-white/40 transition-colors bg-white/5 relative">
                 <input
                   type="file"
-                  accept="image/*,video/*"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  accept="image/*,video/*,.pdf"
+                  onChange={(e) => {
+                    const selected = e.target.files?.[0] || null;
+                    setFileSizeError("");
+                    if (selected) {
+                      if (selected.size > MAX_FILE_BYTES) {
+                        setFileSizeError(
+                          `File is too large: ${formatFileSize(selected.size)}. Maximum allowed size is ${MAX_FILE_MB} MB. Please compress or choose a smaller file.`
+                        );
+                        setFile(null);
+                        e.target.value = ""; // reset input so user can reselect
+                      } else {
+                        setFile(selected);
+                      }
+                    } else {
+                      setFile(null);
+                    }
+                  }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <div className="text-center pointer-events-none">
                   {file ? (
-                    <span className="text-emerald-400 font-medium">📄 {file.name}</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-emerald-400 font-medium">📄 {file.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono">
+                        {formatFileSize(file.size)} / {MAX_FILE_MB} MB ✓
+                      </span>
+                    </div>
                   ) : (
-                    <span className="text-gray-400 text-sm">Click to upload image or video</span>
+                    <span className="text-gray-400 text-sm">Click to upload image, video or PDF</span>
                   )}
                 </div>
               </div>
+              {/* Instant file size error — shown below the dropzone */}
+              {fileSizeError && (
+                <div className="mt-2 flex items-start gap-2 p-3 rounded-xl bg-amber-900/20 border border-amber-500/30 text-amber-300 text-sm">
+                  <span className="text-lg leading-none">⚠️</span>
+                  <div>
+                    <p className="font-bold mb-0.5">File too large</p>
+                    <p>{fileSizeError}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full py-4 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button
+              type="submit"
+              disabled={loading || !!fileSizeError}
+              className="btn-primary w-full py-4 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
               {loading && <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {phaseLabel[publishPhase]}
             </button>
