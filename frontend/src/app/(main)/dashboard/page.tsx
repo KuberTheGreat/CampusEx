@@ -116,7 +116,7 @@ export default function Dashboard() {
   const chartColor = chartData.length >= 2 && chartData[chartData.length - 1].price >= chartData[0].price ? "var(--green)" : "var(--red)";
 
   return (
-    <div className="min-h-screen p-6 relative z-10">
+    <div className="min-h-screen p-4 md:p-6 relative z-10">
       <div className="max-w-7xl mx-auto">
 
         {/* ═══ HEADER ═══ */}
@@ -124,7 +124,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <IconMarket size={32} color="var(--accent)" />
-              <h1 className="text-4xl font-black tracking-tight" style={{ color: "var(--text)" }}>
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight" style={{ color: "var(--text)" }}>
                 The Market
               </h1>
             </div>
@@ -159,7 +159,7 @@ export default function Dashboard() {
                 Leaderboard Spotlight
               </h2>
             </div>
-            <div className="grid grid-cols-3 gap-6 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 items-end">
               {/* Silver (rank 2) — left, shorter */}
               {(() => {
                 const s = top3[1]; const miniData = miniCharts[s.id] || [];
@@ -262,7 +262,7 @@ export default function Dashboard() {
           <input className="input flex-1 min-w-[140px]" placeholder="Search trait..." value={filterTrait} onChange={(e) => setFilterTrait(e.target.value)} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
           {/* ═══ STOCK CARDS GRID ═══ */}
           <div className="lg:col-span-3">
             {rest.length === 0 && top3.length === 0 ? (
@@ -390,10 +390,10 @@ export default function Dashboard() {
 
       {/* ═══ TRADE MODAL ═══ */}
       {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(12px)" }}
           onClick={() => setSelectedUser(null)}>
-          <div className="card p-8 max-w-2xl w-full relative animate-fade-in" onClick={(e) => e.stopPropagation()}
+          <div className="card p-6 md:p-8 max-w-2xl w-full relative animate-fade-in rounded-t-3xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}
             style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
             <button onClick={() => { setSelectedUser(null); setTradeMode(null); }} className="absolute top-4 right-5 text-xl" style={{ color: "var(--text-muted)" }}>✕</button>
 

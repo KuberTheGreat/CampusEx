@@ -53,7 +53,7 @@ export default function PortfolioPage() {
   if (!user) return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>Please log in to view your portfolio.</div>;
 
   return (
-    <div className="min-h-screen p-6 animate-fade-in">
+    <div className="min-h-screen p-4 md:p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
@@ -68,7 +68,7 @@ export default function PortfolioPage() {
         </header>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-3 mb-8">
           {[
             { label: "AURA Balance", value: Number(user.auraCoins || 0).toFixed(2), color: "var(--primary)" },
             { label: "Total Invested", value: `${totalInvested.toFixed(2)} Au`, color: "var(--accent-blue)" },
@@ -96,15 +96,45 @@ export default function PortfolioPage() {
               <button onClick={() => router.push("/dashboard")} className="btn-primary">Browse Market</button>
             </div>
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  {["Stock", "Shares", "Avg Buy", "Current", "Invested", "Value", "P/L"].map(h => (
-                    <th key={h} className="p-4 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile card list */}
+              <div className="md:hidden divide-y" style={{ borderColor: "var(--border)" }}>
+                {portfolio.map((p, i) => {
+                  const inv = p.shares * p.averagePrice;
+                  const cur = p.shares * p.currentPrice;
+                  const pl = cur - inv;
+                  const profit = pl >= 0;
+                  return (
+                    <div key={i} onClick={() => setSelectedStock(p)} className="flex items-center gap-3 p-4 cursor-pointer transition-all"
+                      style={{ background: "transparent" }}
+                      onTouchStart={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
+                      onTouchEnd={(e) => (e.currentTarget.style.background = "transparent")}>
+                      <Avatar userId={p.targetUserId} name={p.name} size={40} />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold truncate" style={{ color: "var(--text)" }}>{p.name}</div>
+                        <div className="text-xs" style={{ color: "var(--text-muted)" }}>{p.stockSymbol} · {p.shares} shares</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-bold text-sm" style={{ color: "var(--text)" }}>{cur.toFixed(2)} Au</div>
+                        <div className="text-xs font-bold" style={{ color: profit ? "var(--accent-green)" : "var(--accent-red)" }}>
+                          {profit ? "+" : ""}{pl.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                      {["Stock", "Shares", "Avg Buy", "Current", "Invested", "Value", "P/L"].map(h => (
+                        <th key={h} className="p-4 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
                 {portfolio.map((p, i) => {
                   const inv = p.shares * p.averagePrice;
                   const cur = p.shares * p.currentPrice;
@@ -135,6 +165,8 @@ export default function PortfolioPage() {
                 })}
               </tbody>
             </table>
+          </div>
+          </>
           )}
         </div>
       </div>
