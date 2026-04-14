@@ -109,14 +109,21 @@ func processNewsResolution(tx *gorm.DB, news models.News) error {
 			log.Printf("  [CRON] Impact[%d] subjectID=%d subjectName=%q",
 				i, impactRow.SubjectID, impactRow.Subject.Name)
 
-			// Word-overlap fuzzy match handles "Kuber" ↔ "Kuber Thakur" etc.
-			subjectWords := strings.Fields(strings.ToLower(impactRow.Subject.Name))
+			// Robust Match: strip spaces, '@', '$' to compare "Devang Vaishnav" vs "DevangVaishnav"
+			dbName := strings.ToLower(strings.ReplaceAll(impactRow.Subject.Name, " ", ""))
+			dbSymbol := strings.ToLower(impactRow.Subject.StockSymbol)
+
 			for _, eval := range aiResp.Evaluations {
-				// Strip @ prefix in case model echoes back "@Kuber" style names
-				cleanEvalName := strings.ReplaceAll(eval.Name, "@", "")
-				evalWords := strings.Fields(strings.ToLower(cleanEvalName))
-				overlap := wordOverlap(subjectWords, evalWords)
-				log.Printf("    match? subject=%v eval=%v overlap=%v", subjectWords, evalWords, overlap)
+				aiName := strings.ToLower(eval.Name)
+				aiName = strings.ReplaceAll(aiName, " ", "")
+				aiName = strings.ReplaceAll(aiName, "@", "")
+				aiName = strings.ReplaceAll(aiName, "$", "")
+
+				// Match if AI name contains the DB name/symbol or vice-versa
+				overlap := strings.Contains(aiName, dbName) || strings.Contains(dbName, aiName) ||
+					strings.Contains(aiName, dbSymbol)
+
+				log.Printf("    match? dbName=%s dbSymbol=%s aiName=%s overlap=%v", dbName, dbSymbol, aiName, overlap)
 				if overlap {
 					direction = eval.ImpactDirection
 					percentage = eval.Percentage
@@ -132,6 +139,11 @@ func processNewsResolution(tx *gorm.DB, news models.News) error {
 				log.Printf("  [CRON] ✗ failed to save impact row %d: %v\n", news.Impacts[i].ID, err)
 			} else {
 				log.Printf("  [CRON] ✓ impact row %d saved\n", news.Impacts[i].ID)
+			}
+
+			// Ensure percentage is always logically positive for the multiplier calculation
+			if percentage < 0 {
+				percentage = -percentage
 			}
 
 			// Apply price change — only when there is a real, non-neutral impact

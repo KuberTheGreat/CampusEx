@@ -50,7 +50,6 @@ Flag content if it contains ANY of the following:
 - "X is ugly / dumb / useless" or similar
 - Targeted insults or mocking
 - Body shaming
-- Public humiliation posts
 
 3. Hate Speech / Discrimination
 - Anything targeting Religion, Caste, Gender, or Region
@@ -73,7 +72,8 @@ Flag content if it contains ANY of the following:
 Do NOT flag (unless it explicitly crosses into the violations above):
 - Friendly hugs or platonic gestures between friends
 - Playful, harmless rivalry
-- News about academic performance or campus politics
+- News about academic performance, relationships, or campus politics
+- Exposing cheating or academic/social misconduct
 - Strong opinions that do not cross into harassment
 
 When in doubt about romantic intent or borderline harassment, ERR ON THE SIDE OF FLAGGING. This is a professional academic platform.
