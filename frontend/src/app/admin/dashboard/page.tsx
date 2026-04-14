@@ -29,6 +29,11 @@ export default function AdminDashboard() {
   const [engineInterval, setEngineInterval] = useState(60);
   const [newInterval, setNewInterval] = useState(60);
 
+  // News Timer States
+  const [newsTimerDuration, setNewsTimerDuration] = useState(5);
+  const [newNewsTimer, setNewNewsTimer] = useState(5);
+  const [updatingNewsTimer, setUpdatingNewsTimer] = useState(false);
+
   // Event Management States
   const [events, setEvents] = useState<any[]>([]);
   const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
@@ -49,6 +54,7 @@ export default function AdminDashboard() {
     }
     fetchUsers();
     fetchEngineStatus();
+    fetchNewsTimerStatus();
     fetchShopItems();
     fetchAllEvents();
   }, []);
@@ -95,6 +101,41 @@ export default function AdminDashboard() {
       toast.error("Network error");
     } finally {
       setUpdatingEngine(false);
+    }
+  };
+
+  const fetchNewsTimerStatus = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/admin/news/duration");
+      const data = await res.json();
+      if (res.ok) {
+        setNewsTimerDuration(data.durationMinutes);
+        setNewNewsTimer(data.durationMinutes);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const updateNewsTimer = async () => {
+    setUpdatingNewsTimer(true);
+    try {
+      const res = await fetch("http://localhost:8080/api/admin/news/duration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minutes: Number(newNewsTimer) })
+      });
+      if (res.ok) {
+        toast.success(`News voting duration updated to ${newNewsTimer}m`);
+        setNewsTimerDuration(newNewsTimer);
+      } else {
+        toast.error("Failed to update news duration");
+      }
+    } catch(err) {
+      console.error(err);
+      toast.error("Network error");
+    } finally {
+      setUpdatingNewsTimer(false);
     }
   };
 
@@ -380,6 +421,52 @@ export default function AdminDashboard() {
               key={preset.val} 
               onClick={() => setNewInterval(preset.val)} 
               className={`px-3 py-1 rounded text-xs font-bold transition ${newInterval === preset.val ? 'bg-amber-500 text-black' : 'bg-black border border-gray-800 text-gray-500 hover:text-amber-400 hover:border-amber-800'}`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* News Timer Control Panel */}
+      <div className="bg-[#111] border border-cyan-900/40 rounded-xl p-6 mb-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-cyan-500 tracking-widest">NEWS_VOTING.CONFIG</h2>
+            <p className="text-xs text-gray-500 mt-1">Controls the duration given to voters before news is resolved by AI. Current: <span className="text-cyan-400 font-bold">{newsTimerDuration}m</span></p>
+          </div>
+          <div className="flex items-center gap-3">
+            <input 
+              type="number" 
+              min="1" 
+              value={newNewsTimer} 
+              onChange={(e) => setNewNewsTimer(Math.max(1, Number(e.target.value)))} 
+              className="w-24 bg-black border border-gray-800 p-2 rounded text-center text-cyan-500 font-bold focus:outline-none focus:border-cyan-500"
+            />
+            <span className="text-xs text-gray-500">minutes</span>
+            <button 
+              onClick={updateNewsTimer} 
+              disabled={newNewsTimer === newsTimerDuration || updatingNewsTimer}
+              className="px-4 py-2 bg-cyan-900/30 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-900/50 rounded font-bold text-xs tracking-widest transition disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {updatingNewsTimer ? <><Loader2 size={14} className="animate-spin" /> APPLYING...</> : "APPLY"}
+            </button>
+          </div>
+        </div>
+        {/* Quick presets */}
+        <div className="flex gap-2 mt-4">
+          {[
+            { label: "1 min (Debug)", val: 1 },
+            { label: "5 min", val: 5 },
+            { label: "15 min", val: 15 },
+            { label: "30 min", val: 30 },
+            { label: "1 hour", val: 60 },
+            { label: "24 hours", val: 1440 },
+          ].map((preset) => (
+            <button 
+              key={preset.val} 
+              onClick={() => setNewNewsTimer(preset.val)} 
+              className={`px-3 py-1 rounded text-xs font-bold transition ${newNewsTimer === preset.val ? 'bg-cyan-500 text-black' : 'bg-black border border-gray-800 text-gray-500 hover:text-cyan-400 hover:border-cyan-800'}`}
             >
               {preset.label}
             </button>
