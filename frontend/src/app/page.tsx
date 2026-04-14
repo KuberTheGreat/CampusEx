@@ -377,6 +377,15 @@ export default function Home() {
   const router = useRouter();
   const { login } = useAuth();
 
+  // ── Auto-redirect authenticated users ──
+  useEffect(() => {
+    const token = localStorage.getItem("campusex_token");
+    const userStr = localStorage.getItem("campusex_user");
+    if (token && userStr) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   // ── Mouse tracking ──
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const x = (e.clientX / window.innerWidth - 0.5) * 2;
