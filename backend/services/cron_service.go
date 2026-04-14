@@ -109,11 +109,13 @@ func processNewsResolution(tx *gorm.DB, news models.News) error {
 			log.Printf("  [CRON] Impact[%d] subjectID=%d subjectName=%q",
 				i, impactRow.SubjectID, impactRow.Subject.Name)
 
-			// Word-overlap fuzzy match handles "Kuber" ↔ "Kuber Thakur" etc.
+			// Word-overlap fuzzy match: Name (e.g. "Kuber Thakur") or Symbol (e.g. "KUB")
 			subjectWords := strings.Fields(strings.ToLower(impactRow.Subject.Name))
+			subjectWords = append(subjectWords, strings.ToLower(impactRow.Subject.StockSymbol))
 			for _, eval := range aiResp.Evaluations {
-				// Strip @ prefix in case model echoes back "@Kuber" style names
+				// Strip non-alphanumeric chars for robust matching
 				cleanEvalName := strings.ReplaceAll(eval.Name, "@", "")
+				cleanEvalName = strings.ReplaceAll(cleanEvalName, "$", "")
 				evalWords := strings.Fields(strings.ToLower(cleanEvalName))
 				overlap := wordOverlap(subjectWords, evalWords)
 				log.Printf("    match? subject=%v eval=%v overlap=%v", subjectWords, evalWords, overlap)
@@ -132,6 +134,11 @@ func processNewsResolution(tx *gorm.DB, news models.News) error {
 				log.Printf("  [CRON] ✗ failed to save impact row %d: %v\n", news.Impacts[i].ID, err)
 			} else {
 				log.Printf("  [CRON] ✓ impact row %d saved\n", news.Impacts[i].ID)
+			}
+
+			// Ensure percentage is always logically positive for the multiplier calculation
+			if percentage < 0 {
+				percentage = -percentage
 			}
 
 			// Apply price change — only when there is a real, non-neutral impact

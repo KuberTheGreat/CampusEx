@@ -74,7 +74,7 @@ const userPromptTemplate = `News: "%s"
 Return JSON exactly matching this schema — no other keys:
 {
   "evaluations": [
-    {"name": "<student name>", "impactDirection": "POSITIVE"|"NEGATIVE"|"NEUTRAL", "percentage": <number 1-40>}
+    {"name": "<student name>", "impactDirection": "POSITIVE"|"NEGATIVE"|"NEUTRAL", "percentage": <absolute number 1-40>}
   ]
 }`
 
