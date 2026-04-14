@@ -51,7 +51,8 @@ export default function ShopAdmin() {
     }
   };
 
-    <div className="p-8 min-h-screen animate-fade-in" style={{ background: "var(--bg)" }}>
+  return (
+    <div className="p-4 md:p-8 min-h-screen animate-fade-in" style={{ background: "var(--bg)" }}>
       <div className="max-w-3xl mx-auto">
         <header className="mb-12 text-center md:text-left">
           <h1 className="text-4xl font-black flex items-center justify-center md:justify-start gap-4 text-poster" style={{ color: "var(--text)" }}>
