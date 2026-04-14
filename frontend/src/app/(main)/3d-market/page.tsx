@@ -489,7 +489,7 @@ export default function ThreeMarket() {
       {/* The 3D Canvas Layer */}
       <div className="flex-1 h-screen relative cursor-crosshair">
         <Canvas
-          shadows
+          shadows={{ type: THREE.PCFShadowMap }}
           camera={{ position: [10, 12, 13], fov: 48 }}
           gl={{
             antialias: true,

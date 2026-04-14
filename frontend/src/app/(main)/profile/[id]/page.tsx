@@ -99,7 +99,7 @@ export default function ProfilePage() {
               </div>
               <div className="h-52">
                 {chartData.length >= 2 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}>
                     <AreaChart data={chartData}>
                       <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={10} />
                       <YAxis stroke="var(--text-muted)" fontSize={10} domain={["dataMin - 2", "dataMax + 2"]} />

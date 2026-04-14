@@ -166,7 +166,7 @@ export default function PortfolioPage() {
             </div>
             <div className="h-40 rounded-xl p-3 mb-5" style={{ background: "var(--bg)" }}>
               {chartData.length >= 2 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}>
                   <AreaChart data={chartData}>
                     <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={9} />
                     <YAxis stroke="var(--text-muted)" fontSize={9} domain={["dataMin - 1", "dataMax + 1"]} />

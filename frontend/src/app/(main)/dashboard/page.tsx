@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AreaChart, Area, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Avatar from "@/components/Avatar";
@@ -180,7 +180,7 @@ export default function Dashboard() {
                     </div>
                     {miniData.length >= 2 && (
                       <div className="graph-container mt-3" style={{ height: 48 }}>
-                        <ResponsiveContainer width="100%" height="100%"><AreaChart data={miniData}><Area type="monotone" dataKey="price" stroke={trend >= 0 ? "var(--green)" : "var(--red)"} fill={trend >= 0 ? "var(--green)" : "var(--red)"} fillOpacity={0.2} strokeWidth={2} /></AreaChart></ResponsiveContainer>
+                        <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}><AreaChart data={miniData}><YAxis hide domain={['dataMin - 1', 'dataMax + 1']} /><Area type="monotone" dataKey="price" stroke={trend >= 0 ? "var(--green)" : "var(--red)"} fill={trend >= 0 ? "var(--green)" : "var(--red)"} fillOpacity={0.2} strokeWidth={2} /></AreaChart></ResponsiveContainer>
                       </div>
                     )}
                   </div>
@@ -210,7 +210,7 @@ export default function Dashboard() {
                     </div>
                     {miniData.length >= 2 && (
                       <div className="graph-container mt-3" style={{ height: 64 }}>
-                        <ResponsiveContainer width="100%" height="100%"><AreaChart data={miniData}><Area type="monotone" dataKey="price" stroke={trend >= 0 ? "var(--green)" : "var(--red)"} fill={trend >= 0 ? "var(--green)" : "var(--red)"} fillOpacity={0.2} strokeWidth={2} /></AreaChart></ResponsiveContainer>
+                        <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}><AreaChart data={miniData}><YAxis hide domain={['dataMin - 1', 'dataMax + 1']} /><Area type="monotone" dataKey="price" stroke={trend >= 0 ? "var(--green)" : "var(--red)"} fill={trend >= 0 ? "var(--green)" : "var(--red)"} fillOpacity={0.2} strokeWidth={2} /></AreaChart></ResponsiveContainer>
                       </div>
                     )}
                   </div>
@@ -237,7 +237,7 @@ export default function Dashboard() {
                     </div>
                     {miniData.length >= 2 && (
                       <div className="graph-container mt-3" style={{ height: 48 }}>
-                        <ResponsiveContainer width="100%" height="100%"><AreaChart data={miniData}><Area type="monotone" dataKey="price" stroke={trend >= 0 ? "var(--green)" : "var(--red)"} fill={trend >= 0 ? "var(--green)" : "var(--red)"} fillOpacity={0.2} strokeWidth={2} /></AreaChart></ResponsiveContainer>
+                        <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}><AreaChart data={miniData}><YAxis hide domain={['dataMin - 1', 'dataMax + 1']} /><Area type="monotone" dataKey="price" stroke={trend >= 0 ? "var(--green)" : "var(--red)"} fill={trend >= 0 ? "var(--green)" : "var(--red)"} fillOpacity={0.2} strokeWidth={2} /></AreaChart></ResponsiveContainer>
                       </div>
                     )}
                   </div>
@@ -317,10 +317,10 @@ export default function Dashboard() {
                         </div>
 
                         {/* Graph — fixed height container */}
-                        <div className="graph-container mb-4">
+                        <div className="graph-container mb-4 h-16">
                           {miniData.length >= 2 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={miniData}>
+                            <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}>
+                              <AreaChart data={miniData}><YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
                                 <Area type="monotone" dataKey="price"
                                   stroke={trendPositive ? "var(--green)" : "var(--red)"}
                                   fill={trendPositive ? "var(--green)" : "var(--red)"}
@@ -422,8 +422,9 @@ export default function Dashboard() {
               </div>
               <div className="h-40 px-3 pb-3">
                 {chartData.length >= 2 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="99%" height="100%" minHeight={1} minWidth={1}>
                     <AreaChart data={chartData}>
+                      <YAxis hide domain={['dataMin - 1', 'dataMax + 1']} />
                       <Area type="monotone" dataKey="price" stroke={chartColor} fill={chartColor} fillOpacity={0.1} strokeWidth={2} />
                     </AreaChart>
                   </ResponsiveContainer>
