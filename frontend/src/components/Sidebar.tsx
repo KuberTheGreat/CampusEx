@@ -64,11 +64,11 @@ export default function Sidebar() {
             <Link
               key={link.path}
               href={link.path}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200"
+              className="group/link flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 relative"
               style={{
                 background: isActive ? "var(--accent-soft)" : "transparent",
                 color: isActive ? "var(--accent)" : "var(--text-secondary)",
-                fontWeight: isActive ? 700 : 500,
+                fontWeight: isActive ? 800 : 500,
               }}
               onMouseEnter={(e) => {
                 if (!isActive) (e.currentTarget as HTMLElement).style.background = "var(--bg-card-hover)";
@@ -77,12 +77,15 @@ export default function Sidebar() {
                 if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent";
               }}
             >
-              <div className="flex-shrink-0 w-6 flex items-center justify-center" style={{ marginLeft: 0 }}>
+              <div className="flex-shrink-0 w-6 flex items-center justify-center transition-transform duration-300 group-hover/link:scale-110">
                 <link.Icon size={20} color={isActive ? "var(--accent)" : "var(--text-secondary)"} />
               </div>
-              <span className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-300 text-sm">
+              <span className="whitespace-nowrap overflow-hidden opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 text-sm font-bold tracking-tight">
                 {link.name}
               </span>
+              {isActive && (
+                <div className="absolute left-0 w-1 h-6 bg-accent rounded-r-full shadow-[2px_0_10px_var(--accent-glow)]" />
+              )}
             </Link>
           );
         })}

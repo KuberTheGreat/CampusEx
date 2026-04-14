@@ -15,12 +15,16 @@ const LIGHT_PALETTE = {
   gridLine: "#D6CBAE",
   fog: "#F9F2E5",
   barColors: [
-    "#C8B6FF", // lavender
-    "#A8E6CF", // mint
-    "#A0C4FF", // soft blue
-    "#FFBEa0", // peach
-    "#FFD6A5", // soft orange
-    "#FDFFB6", // soft yellow
+    "#10B981", // Level 10 (Vibrant Emerald) - High Contrast
+    "#059669", // Level 9
+    "#047857", // Level 8
+    "#065F46", // Level 7
+    "#064E3B", // Level 6
+    "#14532D", // Level 5
+    "#166534", // Level 4
+    "#15803D", // Level 3
+    "#22C55E", // Level 2
+    "#14532D", // Level 1 (Deep Forest)
   ],
   ambientIntensity: 0.7,
   textColor: "#1A1A1A",
@@ -35,12 +39,16 @@ const DARK_PALETTE = {
   gridLine: "#2A2A38",
   fog: "#0A0A14",
   barColors: [
-    "#8B82B8", // purple
-    "#6BA3FF", // blue glow
-    "#FF8AB8", // pink glow
-    "#4ADE80", // green glow
-    "#FFD06B", // amber glow
-    "#A78BFA", // violet
+    "#C4B5FD", // Level 10 (Soft Lavender)
+    "#A78BFA", // Level 9
+    "#818CF8", // Level 8
+    "#6366F1", // Level 7
+    "#4F46E5", // Level 6
+    "#4338CA", // Level 5
+    "#3730A3", // Level 4
+    "#312E81", // Level 3
+    "#1E1B4B", // Level 2
+    "#0F172A", // Level 1 (Deep Midnight)
   ],
   ambientIntensity: 0.5,
   textColor: "#EEEAE2",
@@ -171,13 +179,16 @@ function AnimatedBar({
   onUnhover,
 }: any) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const stripeRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const [x, , z] = getRadialPosition(index);
   const targetHeight = Math.max(0.4, ((user.currentPrice || 1) / maxPrice) * maxHeight);
   const currentHeight = useRef(0.01);
   const time = useRef(Math.random() * 100);
 
-  const barColor = palette.barColors[index % palette.barColors.length];
+  // Value-based color logic (normalized by max price)
+  const normalizedValue = Math.min(0.99, (user.currentPrice || 0) / maxPrice);
+  const barColor = palette.barColors[Math.floor((1 - normalizedValue) * palette.barColors.length)];
 
   useFrame((_, delta) => {
     // Smooth height animation (spring-like lerp)
@@ -188,11 +199,16 @@ function AnimatedBar({
     }
     if (meshRef.current) {
       meshRef.current.scale.y = Math.max(0.01, currentHeight.current);
+    }
+    if (stripeRef.current) {
+      stripeRef.current.scale.y = Math.max(0.01, currentHeight.current);
+    }
 
+    if (groupRef.current) {
       // Idle breathing effect
       time.current += delta;
       const breathe = Math.sin(time.current * 0.8 + index * 0.5) * 0.015;
-      groupRef.current!.position.y = currentHeight.current / 2 + breathe;
+      groupRef.current.position.y = currentHeight.current / 2 + breathe;
     }
 
     // Hover scale
@@ -234,13 +250,39 @@ function AnimatedBar({
         >
           <meshStandardMaterial
             color={barColor}
-            metalness={isDark ? 0.35 : 0.12}
-            roughness={isDark ? 0.45 : 0.38}
+            metalness={isDark ? 0.7 : 0.4}
+            roughness={isDark ? 0.2 : 0.3}
             emissive={barColor}
-            emissiveIntensity={isDark ? (isHovered ? 0.5 : 0.2) : (isHovered ? 0.15 : 0.06)}
+            emissiveIntensity={isDark ? (isHovered ? 3.0 : 0.4 + normalizedValue * 0.4) : (isHovered ? 1.5 : 0.2 + normalizedValue * 0.2)}
             toneMapped={false}
           />
         </RoundedBox>
+
+        {/* The "Left Stripe" rank reinforcement (RPG UI style) */}
+        <RoundedBox
+          ref={stripeRef}
+          args={[0.04, 1, 0.04]}
+          radius={0.02}
+          position={[-0.41, 0, 0.43]}
+          scale={[1, 1, 1]}
+        >
+          <meshStandardMaterial
+            color={palette.barColors[Math.max(0, Math.floor((1 - normalizedValue) * palette.barColors.length) - 2)]}
+            emissive={palette.barColors[0]}
+            emissiveIntensity={isDark ? 5.0 : 2.5}
+            toneMapped={false}
+          />
+        </RoundedBox>
+
+        {isHovered && (
+          <pointLight 
+            position={[0, -0.5, 0]} 
+            intensity={isDark ? 15 : 5} 
+            color={barColor} 
+            distance={4}
+            decay={2}
+          />
+        )}
 
         {/* Label with background pill */}
         <BarLabel

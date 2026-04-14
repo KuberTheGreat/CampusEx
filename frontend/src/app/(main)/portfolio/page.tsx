@@ -55,29 +55,26 @@ export default function PortfolioPage() {
   return (
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
-              <rect x="3" y="7" width="18" height="14" rx="3" stroke="var(--accent)" strokeWidth="2" />
-              <path d="M8 7V5C8 3.9 8.9 3 10 3H14C15.1 3 16 3.9 16 5V7" stroke="var(--accent)" strokeWidth="2" />
-              <circle cx="12" cy="14" r="2.5" fill="var(--accent)" opacity="0.5" />
-            </svg>
-            Portfolio
+        <header className="mb-10 text-center md:text-left">
+          <h1 className="text-4xl font-black flex items-center justify-center md:justify-start gap-4 text-poster" style={{ color: "var(--text)" }}>
+             <span className="text-sticker rotate-[-3deg] inline-block">My</span>
+             <span className="text-stroke">Portfolio</span>
           </h1>
-          <p className="text-sm mt-1 ml-11" style={{ color: "var(--text-secondary)" }}>your bags. your gains. your call.</p>
+          <p className="text-[10px] font-black uppercase tracking-widest mt-3" style={{ color: "var(--text-secondary)" }}>materialized assets and market positions</p>
         </header>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
           {[
-            { label: "AURA Balance", value: Number(user.auraCoins || 0).toFixed(2), color: "var(--primary)" },
-            { label: "Total Invested", value: `${totalInvested.toFixed(2)} Au`, color: "var(--accent-blue)" },
-            { label: "Current Value", value: `${totalCurrent.toFixed(2)} Au`, color: "var(--accent-purple)" },
-            { label: "Unrealized P/L", value: `${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)} Au`, color: totalPL >= 0 ? "var(--accent-green)" : "var(--accent-red)", sub: `(${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(1)}%)` },
+            { label: "AURA LIQUIDITY", value: Number(user.auraCoins || 0).toFixed(2), color: "var(--accent)" },
+            { label: "ACQUIRED ASSETS", value: `${totalInvested.toFixed(2)} Au`, color: "var(--text)" },
+            { label: "MARKET VALUATION", value: `${totalCurrent.toFixed(2)} Au`, color: "var(--text)" },
+            { label: "NET P/L", value: `${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)} Au`, color: totalPL >= 0 ? "var(--green)" : "var(--red)", sub: `(${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(1)}%)` },
           ].map((c, i) => (
-            <div key={i} className="card p-5">
-              <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>{c.label}</div>
-              <div className="text-xl font-extrabold" style={{ color: c.color }}>{c.value} {c.sub && <span className="text-sm opacity-70">{c.sub}</span>}</div>
+            <div key={i} className="card p-6 relative overflow-hidden bg-dot-pattern">
+              <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: "var(--text-secondary)" }}>{c.label}</div>
+              <div className="text-2xl font-black" style={{ color: c.color }}>{c.value}</div>
+              {c.sub && <div className="text-xs font-bold mt-1" style={{ color: c.color }}>{c.sub}</div>}
             </div>
           ))}
         </div>
