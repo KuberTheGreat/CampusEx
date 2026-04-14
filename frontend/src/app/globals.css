@@ -21,8 +21,9 @@
   --green: #2DD4A0;
   --red: #FF4D6A;
   --blue: #4D8EFF;
-  --yellow: #FFBE2E;
-  --pink: #FF6B9D;
+  --yellow: #FFD25E;
+  --pink: #FF85B2;
+  --purple: #8B82B8;
 
   /* backward compat aliases */
   --accent-green: var(--green);
@@ -37,10 +38,10 @@
 
   /* poster accent blobs */
   --blob-1: #FF6B2C;
-  --blob-2: #6D6592;
-  --blob-3: #FFBE2E;
-  --blob-4: #FF6B9D;
-  --blob-5: #4D8EFF;
+  --blob-2: #8B82B8;
+  --blob-3: #FFD25E;
+  --blob-4: #FF85B2;
+  --blob-5: #6BA3FF;
 
   /* card flavors */
   --card-1: #E8F8F0;
@@ -145,7 +146,8 @@ body {
 }
 .stock-card:hover {
   transform: translateY(-8px) rotate(-1deg) scale(1.02);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+  border-color: var(--accent);
 }
 .stock-card:hover::before {
   opacity: 1;
@@ -460,4 +462,40 @@ body {
 }
 .animate-bounce-in {
   animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ── TEXT POSTER ── */
+.text-poster {
+  text-shadow: 2px 2px 0px var(--accent-soft);
+  letter-spacing: -0.02em;
+}
+
+.text-stroke {
+  -webkit-text-stroke: 1px var(--border-strong);
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.shimmer-mask {
+  mask-image: linear-gradient(-75deg, rgba(0,0,0,0.6) 30%, #000 50%, rgba(0,0,0,0.6) 70%);
+  mask-size: 200%;
+  animation: shimmer-swipe 4s infinite linear;
+}
+
+@keyframes shimmer-swipe {
+  from { mask-position: 150%; }
+  to { mask-position: -50%; }
+}
+
+.graph-container {
+  height: 64px;
+  width: 100%;
+}
+
+.graph-container-lg {
+  height: 180px;
+  width: 100%;
 }

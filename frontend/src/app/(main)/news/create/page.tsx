@@ -12,7 +12,7 @@ type SearchedUser = { id: number; name: string; stockSymbol: string; };
 export default function CreateNewsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  
+
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [moderationBlocked, setModerationBlocked] = useState(false);
@@ -79,7 +79,7 @@ export default function CreateNewsPage() {
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    
+
     // Check if we are currently typing a mention
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = newContent.slice(0, cursorPos);
@@ -118,7 +118,7 @@ export default function CreateNewsPage() {
     // Replace the `@typed...` with the user's full name, e.g., `@Vedant Kulkarni`
     const before = content.slice(0, activeMentionQuery.startIndex);
     const after = content.slice(activeMentionQuery.endIndex);
-    
+
     // Convert spaces in name to PascalCase or strip so it forms one consecutive mention block,
     // or just leave as is. Actually, if we leave spaces: "@Vedant Kulkarni", our matching logic 
     // handles words but standard mentions don't have spaces. Let's use the exact name but strip spaces
@@ -126,10 +126,10 @@ export default function CreateNewsPage() {
     // Let's insert the exact full name, without spaces, to ensure the regex finds it easily as one token.
     const cleanName = u.name.replace(/\s+/g, '');
     const newMentionText = `@${cleanName} `;
-    
+
     const newContent = before + newMentionText + after;
     setContent(newContent);
-    
+
     setMentions(prev => {
       const next = new Map(prev);
       next.set(cleanName, u);
@@ -138,7 +138,7 @@ export default function CreateNewsPage() {
 
     setActiveMentionQuery(null);
     setShowDropdown(false);
-    
+
     // Refocus textarea and place cursor after the new mention
     setTimeout(() => {
       if (textareaRef.current) {
@@ -162,7 +162,7 @@ export default function CreateNewsPage() {
     e.preventDefault();
     if (!user?.id) { setError("You must be logged in."); return; }
     if (!content.trim()) { setError("Please write something."); return; }
-    
+
     const subjectIds = Array.from(mentions.values()).map(u => u.id);
     const uniqueSubjectIds = [...new Set(subjectIds)];
 
@@ -176,13 +176,13 @@ export default function CreateNewsPage() {
 
     try {
       let evidenceUrl = "";
-      
+
       // Phase 1: Upload evidence
       if (file) {
         setPublishPhase("uploading");
         const formData = new FormData();
         formData.append("file", file);
-        
+
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
           body: formData,
@@ -202,9 +202,9 @@ export default function CreateNewsPage() {
       const res = await fetch("/api/news", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          publisherId: user.id, 
-          subjectIds: uniqueSubjectIds, 
+        body: JSON.stringify({
+          publisherId: user.id,
+          subjectIds: uniqueSubjectIds,
           content,
           evidenceUrl
         }),
@@ -241,11 +241,10 @@ export default function CreateNewsPage() {
         <p className="text-sm mb-6 ml-8" style={{ color: "var(--text-secondary)" }}>spill the tea. your credibility is at stake.</p>
 
         {error && (
-          <div className={`p-4 mb-6 rounded-xl text-sm font-medium border ${
-            moderationBlocked
+          <div className={`p-4 mb-6 rounded-xl text-sm font-medium border ${moderationBlocked
               ? "bg-red-900/20 border-red-500/40 text-red-300"
               : "bg-red-500/10 border-red-500/20 text-red-400"
-          }`}>
+            }`}>
             {moderationBlocked && (
               <div className="flex items-center gap-2 font-bold text-red-400 mb-2">
                 <span>🚨</span>
@@ -266,7 +265,7 @@ export default function CreateNewsPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6 relative">
-            
+
             {/* Mention Tracked Chips */}
             {mentions.size > 0 && (
               <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-white/10 bg-black/20">
@@ -282,14 +281,14 @@ export default function CreateNewsPage() {
 
             <div className="relative">
               <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>The Scoop</label>
-              <textarea 
+              <textarea
                 ref={textareaRef}
-                value={content} 
-                onChange={handleContentChange} 
-                className="input w-full min-h-[160px] resize-y text-lg p-4 leading-relaxed" 
-                placeholder="What happened? Type @ to tag people..." 
+                value={content}
+                onChange={handleContentChange}
+                className="input w-full min-h-[160px] resize-y text-lg p-4 leading-relaxed"
+                placeholder="What happened? Type @ to tag people..."
               />
-              
+
               {/* Mentions Dropdown */}
               {showDropdown && searchResults.length > 0 && (
                 <div ref={dropdownRef} className="absolute z-50 mt-1 w-64 rounded-xl border border-white/10 shadow-2xl overflow-hidden backdrop-blur-xl bg-[#1a1a1a]/95">
@@ -310,7 +309,7 @@ export default function CreateNewsPage() {
 
             <div>
               <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Evidence (Optional)</label>
-              <div className="border border-dashed border-white/20 p-4 rounded-xl hover:border-white/40 transition-colors bg-white/5 relative">
+              <div className="border border-dashed p-4 rounded-xl hover:border-accent transition-colors bg-white relative" style={{ borderColor: 'var(--border)' }}>
                 <input
                   type="file"
                   accept="image/*,video/*,.pdf"

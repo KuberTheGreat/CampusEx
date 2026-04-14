@@ -53,31 +53,28 @@ export default function PortfolioPage() {
   if (!user) return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>Please log in to view your portfolio.</div>;
 
   return (
-    <div className="min-h-screen p-4 md:p-6 animate-fade-in">
+    <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-black flex items-center gap-3" style={{ color: "var(--text)" }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
-              <rect x="3" y="7" width="18" height="14" rx="3" stroke="var(--accent)" strokeWidth="2" />
-              <path d="M8 7V5C8 3.9 8.9 3 10 3H14C15.1 3 16 3.9 16 5V7" stroke="var(--accent)" strokeWidth="2" />
-              <circle cx="12" cy="14" r="2.5" fill="var(--accent)" opacity="0.5" />
-            </svg>
-            Portfolio
+        <header className="mb-10 text-center md:text-left">
+          <h1 className="text-4xl font-black flex items-center justify-center md:justify-start gap-4 text-poster" style={{ color: "var(--text)" }}>
+             <span className="text-sticker rotate-[-3deg] inline-block">My</span>
+             <span className="text-stroke">Portfolio</span>
           </h1>
-          <p className="text-sm mt-1 ml-11" style={{ color: "var(--text-secondary)" }}>your bags. your gains. your call.</p>
+          <p className="text-[10px] font-black uppercase tracking-widest mt-3" style={{ color: "var(--text-secondary)" }}>materialized assets and market positions</p>
         </header>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
           {[
-            { label: "AURA Balance", value: Number(user.auraCoins || 0).toFixed(2), color: "var(--primary)" },
-            { label: "Total Invested", value: `${totalInvested.toFixed(2)} Au`, color: "var(--accent-blue)" },
-            { label: "Current Value", value: `${totalCurrent.toFixed(2)} Au`, color: "var(--accent-purple)" },
-            { label: "Unrealized P/L", value: `${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)} Au`, color: totalPL >= 0 ? "var(--accent-green)" : "var(--accent-red)", sub: `(${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(1)}%)` },
+            { label: "AURA LIQUIDITY", value: Number(user.auraCoins || 0).toFixed(2), color: "var(--accent)" },
+            { label: "ACQUIRED ASSETS", value: `${totalInvested.toFixed(2)} Au`, color: "var(--text)" },
+            { label: "MARKET VALUATION", value: `${totalCurrent.toFixed(2)} Au`, color: "var(--text)" },
+            { label: "NET P/L", value: `${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)} Au`, color: totalPL >= 0 ? "var(--green)" : "var(--red)", sub: `(${totalPLPct >= 0 ? '+' : ''}${totalPLPct.toFixed(1)}%)` },
           ].map((c, i) => (
-            <div key={i} className="card p-5">
-              <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>{c.label}</div>
-              <div className="text-xl font-extrabold" style={{ color: c.color }}>{c.value} {c.sub && <span className="text-sm opacity-70">{c.sub}</span>}</div>
+            <div key={i} className="card p-6 relative overflow-hidden bg-dot-pattern">
+              <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: "var(--text-secondary)" }}>{c.label}</div>
+              <div className="text-2xl font-black" style={{ color: c.color }}>{c.value}</div>
+              {c.sub && <div className="text-xs font-bold mt-1" style={{ color: c.color }}>{c.sub}</div>}
             </div>
           ))}
         </div>
@@ -96,45 +93,15 @@ export default function PortfolioPage() {
               <button onClick={() => router.push("/dashboard")} className="btn-primary">Browse Market</button>
             </div>
           ) : (
-            <>
-              {/* Mobile card list */}
-              <div className="md:hidden divide-y" style={{ borderColor: "var(--border)" }}>
-                {portfolio.map((p, i) => {
-                  const inv = p.shares * p.averagePrice;
-                  const cur = p.shares * p.currentPrice;
-                  const pl = cur - inv;
-                  const profit = pl >= 0;
-                  return (
-                    <div key={i} onClick={() => setSelectedStock(p)} className="flex items-center gap-3 p-4 cursor-pointer transition-all"
-                      style={{ background: "transparent" }}
-                      onTouchStart={(e) => (e.currentTarget.style.background = "var(--bg-hover)")}
-                      onTouchEnd={(e) => (e.currentTarget.style.background = "transparent")}>
-                      <Avatar userId={p.targetUserId} name={p.name} size={40} />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold truncate" style={{ color: "var(--text)" }}>{p.name}</div>
-                        <div className="text-xs" style={{ color: "var(--text-muted)" }}>{p.stockSymbol} · {p.shares} shares</div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-bold text-sm" style={{ color: "var(--text)" }}>{cur.toFixed(2)} Au</div>
-                        <div className="text-xs font-bold" style={{ color: profit ? "var(--accent-green)" : "var(--accent-red)" }}>
-                          {profit ? "+" : ""}{pl.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Desktop table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                      {["Stock", "Shares", "Avg Buy", "Current", "Invested", "Value", "P/L"].map(h => (
-                        <th key={h} className="p-4 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                  {["Stock", "Shares", "Avg Buy", "Current", "Invested", "Value", "P/L"].map(h => (
+                    <th key={h} className="p-4 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
                 {portfolio.map((p, i) => {
                   const inv = p.shares * p.averagePrice;
                   const cur = p.shares * p.currentPrice;
@@ -165,8 +132,6 @@ export default function PortfolioPage() {
                 })}
               </tbody>
             </table>
-          </div>
-          </>
           )}
         </div>
       </div>

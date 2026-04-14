@@ -64,21 +64,25 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen p-4 md:p-6 animate-fade-in">
       <div className="max-w-5xl mx-auto">
-        <button onClick={() => router.back()} className="flex items-center gap-2 mb-6 text-sm font-medium transition" style={{ color: "var(--text-secondary)" }}>
-          ← Back
-        </button>
+        <header className="mb-10 text-center md:text-left">
+          <h1 className="text-4xl font-black flex items-center justify-center md:justify-start gap-4 text-poster" style={{ color: "var(--text)" }}>
+             <span className="text-sticker rotate-[-3deg] inline-block">User</span>
+             <span className="text-stroke">Profile</span>
+          </h1>
+          <p className="text-[10px] font-black uppercase tracking-widest mt-3" style={{ color: "var(--text-secondary)" }}>Individual asset overview and historical trajectory</p>
+        </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left: Identity */}
-          <div className="card p-8 text-center space-y-5">
-            <Avatar userId={profile.id} name={profile.name} size={112} />
+          <div className="card p-8 text-center space-y-6 relative overflow-hidden bg-dot-pattern">
+            <Avatar userId={profile.id} name={profile.name} size={112} className="mx-auto border-4 border-white shadow-xl" />
             <div>
-              <h1 className="text-2xl font-extrabold" style={{ color: "var(--text)" }}>{profile.name}</h1>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{profile.email}</p>
+              <h1 className="text-3xl font-black text-poster" style={{ color: "var(--text)" }}>{profile.name}</h1>
+              <p className="text-xs font-bold uppercase tracking-widest mt-1" style={{ color: "var(--text-secondary)" }}>{profile.stockSymbol}</p>
             </div>
-            <div className="p-4 rounded-xl" style={{ background: "var(--bg)" }}>
-              <span className="text-xs block mb-1" style={{ color: "var(--text-muted)" }}>Current Valuation</span>
-              <span className="font-black text-2xl" style={{ color: "var(--accent)" }}>{profile.currentPrice?.toFixed(2) || "10.00"} Au</span>
+            <div className="p-5 rounded-2xl bg-white border" style={{ borderColor: 'var(--border)' }}>
+              <span className="text-[10px] block mb-1 font-black uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Current Valuation</span>
+              <span className="font-black text-3xl" style={{ color: "var(--accent)" }}>{profile.currentPrice?.toFixed(2) || "10.00"} <span className="text-xs">Au</span></span>
             </div>
             {String(authUser?.id) !== String(profile.id) && (
               <button onClick={() => { setTradeMode("BUY"); setTradeShares(1); }} className="btn-accent w-full py-3">

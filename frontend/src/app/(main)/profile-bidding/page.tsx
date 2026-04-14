@@ -63,39 +63,44 @@ export default function ProfileBiddingDashboard() {
         </header>
 
         {isLoading ? (
-          <div className="text-center py-10 animate-pulse text-[var(--text-muted)]">Loading auctions...</div>
+          <div className="text-center py-10 animate-pulse text-[var(--text-muted)]">SYNCHRONIZING AUCTIONS...</div>
         ) : auctions.length === 0 ? (
-          <div className="card p-12 flex flex-col items-center justify-center text-center">
-            <AlertCircle size={48} className="mb-4 opacity-50 text-[var(--primary)]" />
-            <h2 className="text-xl font-bold mb-2">No Active Auctions</h2>
-            <p className="text-[var(--text-secondary)]">Wait for the admin to launch the next profile bidding event.</p>
+          <div className="card p-24 flex flex-col items-center justify-center text-center bg-dot-pattern">
+            <AlertCircle size={64} className="mb-6 opacity-30 text-accent" />
+            <h2 className="text-3xl font-black text-poster mb-2">No Active Auctions</h2>
+            <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">Wait for the next high-stakes connection window</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {auctions.map((auction) => {
               const target = auction.targetUser;
               return (
-                <div key={auction.id} className="card p-6 overflow-hidden relative transition-all duration-300">
-                  
-                  <div className="flex items-center gap-4 mb-6 relative z-10">
-                    <div className="w-16 h-16 rounded-full overflow-hidden border" style={{ borderColor: "var(--border)" }}>
-                      <Avatar userId={target?.id} name={target?.name} size={64} />
+                <div key={auction.id} className="card p-8 overflow-hidden relative transition-all duration-300 group hover:-translate-y-2">
+                  <div className="absolute top-0 right-0 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-accent-soft text-accent rounded-bl-xl border-l border-b" style={{ borderColor: 'var(--border)' }}>
+                      LIVE AUCTION
                     </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-5 mb-8 relative z-10">
+                    <Avatar userId={target?.id} name={target?.name} size={72} className="group-hover:border-accent" />
                     <div>
-                      <h2 className="text-xl font-bold text-[var(--text)]">{target?.name || "Unknown"}</h2>
-                      <p className="flex items-center gap-1 text-sm px-2 py-1 rounded-md mt-1 w-fit" style={{ background: "var(--bg-input)", color: auction.status === 'RESOLVING' ? "var(--accent-red)" : "var(--text-secondary)" }}>
+                      <h2 className="text-2xl font-black text-poster" style={{ color: "var(--text)" }}>{target?.name || "Unknown"}</h2>
+                      <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-tighter mt-1 px-2 py-0.5 rounded-full w-fit" 
+                           style={{ background: auction.status === 'RESOLVING' ? "var(--red-soft)" : "var(--accent-soft)", 
+                                   color: auction.status === 'RESOLVING' ? "var(--red)" : "var(--accent)" }}>
                         {auction.status === 'ACTIVE' ? (
-                          <><Clock size={12} className="text-[var(--primary)]" /> Ends in: <Countdown endTime={auction.endTime} /></>
+                          <><Clock size={10} /> ENDS IN: <Countdown endTime={auction.endTime} /></>
                         ) : (
-                          <><AlertCircle size={12} style={{ color: "var(--accent-red)" }} /> Auction Over - Target Deciding...</>
+                          <><AlertCircle size={10} /> DECIDING...</>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </div>
 
                   <Link href={`/profile-bidding/${auction.id}`}>
-                    <button className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-                      <IconGavel size={18} /> {auction.status === 'ACTIVE' ? 'Enter Auction' : 'View Resolution'} <ArrowRight size={16} />
+                    <button className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 group-hover:shadow-xl transition-all">
+                      <IconGavel size={18} /> {auction.status === 'ACTIVE' ? 'ENTER THE ARENA' : 'VIEW OUTCOME'} <ArrowRight size={16} />
                     </button>
                   </Link>
                 </div>
