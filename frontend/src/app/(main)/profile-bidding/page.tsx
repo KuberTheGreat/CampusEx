@@ -7,6 +7,26 @@ import { IconGavel, IconHeart } from "@/components/Icons";
 import Link from "next/link";
 import Avatar from "@/components/Avatar";
 
+function Countdown({ endTime }: { endTime: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const update = () => {
+      const diff = new Date(endTime).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Ended"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`);
+    };
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, [endTime]);
+
+  return <span>{timeLeft}</span>;
+}
+
 export default function ProfileBiddingDashboard() {
   const [auctions, setAuctions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +85,7 @@ export default function ProfileBiddingDashboard() {
                       <h2 className="text-xl font-bold text-[var(--text)]">{target?.name || "Unknown"}</h2>
                       <p className="flex items-center gap-1 text-sm px-2 py-1 rounded-md mt-1 w-fit" style={{ background: "var(--bg-input)", color: auction.status === 'RESOLVING' ? "var(--accent-red)" : "var(--text-secondary)" }}>
                         {auction.status === 'ACTIVE' ? (
-                          <><Clock size={12} className="text-[var(--primary)]" /> Ends: {new Date(auction.endTime).toLocaleTimeString()}</>
+                          <><Clock size={12} className="text-[var(--primary)]" /> Ends in: <Countdown endTime={auction.endTime} /></>
                         ) : (
                           <><AlertCircle size={12} style={{ color: "var(--accent-red)" }} /> Auction Over - Target Deciding...</>
                         )}

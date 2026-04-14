@@ -8,6 +8,26 @@ import Avatar from "@/components/Avatar";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
+function Countdown({ endTime }: { endTime: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const update = () => {
+      const diff = new Date(endTime).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Ended"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`);
+    };
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, [endTime]);
+
+  return <span>{timeLeft}</span>;
+}
+
 export default function ProfileAuctionDetails() {
   const { user } = useAuth();
   const { id } = useParams();
@@ -118,7 +138,7 @@ export default function ProfileAuctionDetails() {
              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-[var(--text-secondary)]">
                <span className="flex items-center gap-1 bg-[var(--bg-input)] px-3 py-1 rounded-full"><Clock size={14} className="text-[var(--primary)]"/> Status: {auction.status}</span>
                {auction.status === "ACTIVE" && (
-                 <span className="flex items-center gap-1 bg-[var(--bg-input)] px-3 py-1 rounded-full">Ends: {new Date(auction.endTime).toLocaleTimeString()}</span>
+                 <span className="flex items-center gap-1 bg-[var(--bg-input)] px-3 py-1 rounded-full">Ends in: <Countdown endTime={auction.endTime} /></span>
                )}
              </div>
            </div>
