@@ -1,97 +1,295 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 type SearchedUser = { id: number; name: string; stockSymbol: string; };
 
 export default function CreateNewsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [subjectId, setSubjectId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  
   const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [moderationBlocked, setModerationBlocked] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    if (!searchQuery.trim() || subjectId !== null) { setSearchResults([]); return; }
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`http://localhost:8080/api/user/search?q=${encodeURIComponent(searchQuery)}`);
-        if (res.ok) { const data = await res.json(); setSearchResults(data.users.filter((u: SearchedUser) => u.id !== user?.id)); setShowDropdown(true); }
-      } catch (err) { console.error("Search failed", err); }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, subjectId, user?.id]);
+  // Multi-phase submission tracking
+  type PublishPhase = "idle" | "uploading" | "moderating" | "publishing";
+  const [publishPhase, setPublishPhase] = useState<PublishPhase>("idle");
+  const loading = publishPhase !== "idle";
 
+  const phaseLabel: Record<PublishPhase, string> = {
+    idle: "Submit to Verification",
+    uploading: "📤 Uploading Evidence...",
+    moderating: "🛡️ AI Safety Engine Analysing...",
+    publishing: "📡 Publishing to Feed...",
+  };
+
+  // Mention system state
+  const [mentions, setMentions] = useState<Map<string, SearchedUser>>(new Map());
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
+  const [activeMentionQuery, setActiveMentionQuery] = useState<{ text: string; startIndex: number; endIndex: number } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
   useEffect(() => {
     const h = (e: MouseEvent) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false); };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const handleSelectUser = (u: SearchedUser) => { setSubjectId(u.id); setSearchQuery(`${u.name} ($${u.stockSymbol})`); setShowDropdown(false); };
-  const handleClearSubject = () => { setSubjectId(null); setSearchQuery(""); };
+  // Search logic for mentions
+  useEffect(() => {
+    if (!activeMentionQuery || !activeMentionQuery.text.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/user/search?q=${encodeURIComponent(activeMentionQuery.text)}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Filter out current user
+          setSearchResults(data.users.filter((u: SearchedUser) => u.id !== user?.id));
+          setShowDropdown(true);
+        }
+      } catch (err) { console.error("Search failed", err); }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeMentionQuery, user?.id]);
+
+  // Handle textarea changes to detect @typing
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    
+    // Check if we are currently typing a mention
+    const cursorPos = e.target.selectionStart;
+    const textBeforeCursor = newContent.slice(0, cursorPos);
+    const wordsBeforeCursor = textBeforeCursor.split(/[\s\n]/);
+    const lastWord = wordsBeforeCursor[wordsBeforeCursor.length - 1];
+
+    if (lastWord.startsWith('@')) {
+      const queryText = lastWord.slice(1);
+      setActiveMentionQuery({
+        text: queryText,
+        startIndex: cursorPos - lastWord.length,
+        endIndex: cursorPos
+      });
+      setShowDropdown(true);
+    } else {
+      setActiveMentionQuery(null);
+      setShowDropdown(false);
+    }
+
+    // Clean up mentions map if user deletes a mention from text
+    setMentions(prev => {
+      const next = new Map(prev);
+      for (const [name, _] of prev.entries()) {
+        if (!newContent.toLowerCase().includes(`@${name.toLowerCase()}`)) {
+          next.delete(name);
+        }
+      }
+      return next;
+    });
+  };
+
+  // Handle selecting a user from dropdown
+  const handleSelectUser = (u: SearchedUser) => {
+    if (!activeMentionQuery || !textareaRef.current) return;
+
+    // Replace the `@typed...` with the user's full name, e.g., `@Vedant Kulkarni`
+    const before = content.slice(0, activeMentionQuery.startIndex);
+    const after = content.slice(activeMentionQuery.endIndex);
+    
+    // Convert spaces in name to PascalCase or strip so it forms one consecutive mention block,
+    // or just leave as is. Actually, if we leave spaces: "@Vedant Kulkarni", our matching logic 
+    // handles words but standard mentions don't have spaces. Let's use the exact name but strip spaces
+    // for the visual @ tag (e.g. "@VedantKulkarni") to be safe, or just insert it as is. 
+    // Let's insert the exact full name, without spaces, to ensure the regex finds it easily as one token.
+    const cleanName = u.name.replace(/\s+/g, '');
+    const newMentionText = `@${cleanName} `;
+    
+    const newContent = before + newMentionText + after;
+    setContent(newContent);
+    
+    setMentions(prev => {
+      const next = new Map(prev);
+      next.set(cleanName, u);
+      return next;
+    });
+
+    setActiveMentionQuery(null);
+    setShowDropdown(false);
+    
+    // Refocus textarea and place cursor after the new mention
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const curPos = before.length + newMentionText.length;
+        textareaRef.current.setSelectionRange(curPos, curPos);
+      }
+    }, 0);
+  };
+
+  const handleRemoveMention = (name: string) => {
+    setContent(prev => prev.replace(new RegExp(`@${name}\\b`, 'gi'), ''));
+    setMentions(prev => {
+      const next = new Map(prev);
+      next.delete(name);
+      return next;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id) { setError("You must be logged in."); return; }
     if (!content.trim()) { setError("Please write something."); return; }
-    setLoading(true); setError("");
+    
+    const subjectIds = Array.from(mentions.values()).map(u => u.id);
+    const uniqueSubjectIds = [...new Set(subjectIds)];
+
+    if (uniqueSubjectIds.length === 0) {
+      setError("Please tag at least one subject using @mention.");
+      return;
+    }
+
+    setError("");
+    setModerationBlocked(false);
+
     try {
-      const res = await fetch("http://localhost:8080/api/news", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publisherId: user.id, ...(subjectId ? { subjectId } : {}), content }),
+      let evidenceUrl = "";
+      
+      // Phase 1: Upload evidence
+      if (file) {
+        setPublishPhase("uploading");
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) throw new Error("Failed to upload file");
+
+        const uploadData = await uploadRes.json();
+        evidenceUrl = uploadData.url;
+      }
+
+      // Phase 2: AI Moderation analysis (backend runs this synchronously)
+      setPublishPhase("moderating");
+
+      // Phase 3: Submit to backend (which runs moderation then saves)
+      setPublishPhase("publishing");
+      const res = await fetch("/api/news", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          publisherId: user.id, 
+          subjectIds: uniqueSubjectIds, 
+          content,
+          evidenceUrl
+        }),
       });
-      if (res.ok) router.push("/news");
-      else { const d = await res.json(); setError(d.error || "Failed to create news"); }
-    } catch { setError("Network error."); }
-    finally { setLoading(false); }
+
+      if (res.ok) {
+        router.push("/news");
+      } else {
+        const d = await res.json();
+        if (d.moderationBlock) {
+          setModerationBlocked(true);
+          setError(d.reason || "Content flagged by AI Safety Engine.");
+        } else {
+          setError(d.error || "Failed to publish news.");
+        }
+      }
+    } catch {
+      setError("Network error or upload failed.");
+    } finally {
+      setPublishPhase("idle");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg)" }}>
-      <div className="card max-w-lg w-full p-8 relative animate-fade-in">
-        <Link href="/news" className="text-sm font-medium mb-6 inline-block transition" style={{ color: "var(--primary)" }}>
-          ← Back to News Feed
+      <div className="card max-w-2xl w-full p-8 relative animate-fade-in shadow-2xl">
+        <Link href="/news" className="absolute top-6 left-6 text-2xl hover:scale-110 transition-transform" style={{ color: "var(--text-secondary)" }}>
+          &larr;
         </Link>
-        <h1 className="text-2xl font-extrabold mb-1" style={{ color: "var(--text)" }}>Publish Campus News</h1>
-        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>Report events truthfully. Your credibility is at stake.</p>
+        <h2 className="text-3xl font-extrabold text-center mb-2" style={{ color: "var(--text)" }}>Break the News</h2>
+        <p className="text-center text-sm mb-8" style={{ color: "var(--text-secondary)" }}>
+          Post an update and tag subjects using <span className="text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">@name</span>.
+        </p>
+
+        {error && (
+          <div className={`p-4 mb-6 rounded-xl text-sm font-medium border ${
+            moderationBlocked
+              ? "bg-red-900/20 border-red-500/40 text-red-300"
+              : "bg-red-500/10 border-red-500/20 text-red-400"
+          }`}>
+            {moderationBlocked && (
+              <div className="flex items-center gap-2 font-bold text-red-400 mb-2">
+                <span>🚨</span>
+                <span>Post Blocked by AI Safety Engine</span>
+              </div>
+            )}
+            <p>{error}</p>
+            {moderationBlocked && (
+              <p className="text-xs text-gray-500 mt-2">Edit your content and try again. Repeated violations may affect your Credibility Score.</p>
+            )}
+          </div>
+        )}
 
         {!user ? (
-          <div className="p-4 rounded-xl text-sm" style={{ background: "rgba(255,59,48,0.08)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.2)" }}>
-            Please log in first.
+          <div className="text-center p-6 border rounded-xl" style={{ borderColor: "var(--border)" }}>
+            <p className="mb-4" style={{ color: "var(--text-secondary)" }}>You need an account to publish.</p>
+            <Link href="/login" className="btn-primary">Sign In</Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && <div className="p-3 rounded-xl text-sm" style={{ background: "rgba(255,59,48,0.08)", color: "var(--accent-red)", border: "1px solid rgba(255,59,48,0.2)" }}>{error}</div>}
-
-            <div className="relative" ref={dropdownRef}>
-              <label className="block text-xs font-bold mb-1 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Subject (optional)</label>
-              <div className="relative">
-                <input type="text" value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); if (subjectId !== null) setSubjectId(null); }}
-                  onFocus={() => { if (searchResults.length > 0) setShowDropdown(true); }}
-                  className="input w-full" placeholder="Search a user..." />
-                {subjectId !== null && (
-                  <button type="button" onClick={handleClearSubject} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: "var(--bg-hover)", color: "var(--text-muted)" }}>×</button>
-                )}
+          <form onSubmit={handleSubmit} className="space-y-6 relative">
+            
+            {/* Mention Tracked Chips */}
+            {mentions.size > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-white/10 bg-black/20">
+                <span className="text-xs text-gray-400 my-auto uppercase tracking-wider font-semibold mr-2">Tagged:</span>
+                {Array.from(mentions.entries()).map(([name, u]) => (
+                  <div key={u.id} className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-full text-sm">
+                    <span>@{name} <span className="opacity-60 text-xs">${u.stockSymbol}</span></span>
+                    <button type="button" onClick={() => handleRemoveMention(name)} className="hover:text-red-400 font-bold ml-1">&times;</button>
+                  </div>
+                ))}
               </div>
+            )}
+
+            <div className="relative">
+              <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>The Scoop</label>
+              <textarea 
+                ref={textareaRef}
+                value={content} 
+                onChange={handleContentChange} 
+                className="input w-full min-h-[160px] resize-y text-lg p-4 leading-relaxed" 
+                placeholder="What happened? Type @ to tag people..." 
+              />
+              
+              {/* Mentions Dropdown */}
               {showDropdown && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 w-full mt-1 rounded-xl overflow-hidden z-50 max-h-48 overflow-y-auto" style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "0 8px 30px var(--shadow-lg)" }}>
-                  {searchResults.map((su) => (
-                    <button key={su.id} type="button" onClick={() => handleSelectUser(su)} className="w-full text-left px-4 py-3 flex justify-between items-center transition"
-                      style={{ borderBottom: "1px solid var(--border)" }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                      <span className="font-medium" style={{ color: "var(--text)" }}>{su.name}</span>
-                      <span className="badge text-xs">${su.stockSymbol}</span>
+                <div ref={dropdownRef} className="absolute z-50 mt-1 w-64 rounded-xl border border-white/10 shadow-2xl overflow-hidden backdrop-blur-xl bg-[#1a1a1a]/95">
+                  {searchResults.map(u => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => handleSelectUser(u)}
+                      className="w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/5 last:border-0 flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-gray-200">{u.name}</span>
+                      <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">${u.stockSymbol}</span>
                     </button>
                   ))}
                 </div>
@@ -99,12 +297,27 @@ export default function CreateNewsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold mb-1 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>The Scoop</label>
-              <textarea value={content} onChange={(e) => setContent(e.target.value)} className="input w-full min-h-[120px] resize-y" placeholder="What happened? Be specific." />
+              <label className="block text-xs font-bold mb-2 uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>Evidence (Optional)</label>
+              <div className="border border-dashed border-white/20 p-4 rounded-xl hover:border-white/40 transition-colors bg-white/5 relative">
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="text-center pointer-events-none">
+                  {file ? (
+                    <span className="text-emerald-400 font-medium">📄 {file.name}</span>
+                  ) : (
+                    <span className="text-gray-400 text-sm">Click to upload image or video</span>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? "Publishing..." : "Submit to Verification"}
+            <button type="submit" disabled={loading} className="btn-primary w-full py-4 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              {loading && <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              {phaseLabel[publishPhase]}
             </button>
           </form>
         )}

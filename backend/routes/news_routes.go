@@ -39,6 +39,19 @@ func createNews(c *gin.Context) {
 		return
 	}
 
+	// ── AI Safety Moderation Gate ──────────────────────────────────────────────
+	// This runs BEFORE the content ever touches the database.
+	// We check both the text content and any attached media (image/pdf/video).
+	modResult := services.ModerateAll(input.Content, input.EvidenceURL)
+	if !modResult.Safe {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":           "Your post was blocked by the AI Safety Engine.",
+			"moderationBlock": true,
+			"reason":          modResult.Reason,
+		})
+		return
+	}
+
 	news := models.News{
 		PublisherID: input.PublisherID,
 		Content:     input.Content,
