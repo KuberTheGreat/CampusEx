@@ -17,10 +17,10 @@ interface ShopItem {
 }
 
 const RARITY_STYLES: Record<string, { bg: string; border: string; text: string }> = {
-  Common: { bg: "rgba(160,160,160,0.1)", border: "rgba(160,160,160,0.3)", text: "#999" },
-  Rare: { bg: "rgba(0,122,255,0.1)", border: "rgba(0,122,255,0.3)", text: "var(--accent-blue)" },
-  Epic: { bg: "rgba(175,82,222,0.1)", border: "rgba(175,82,222,0.3)", text: "var(--accent-purple)" },
-  Legendary: { bg: "rgba(255,140,0,0.1)", border: "rgba(255,140,0,0.3)", text: "var(--primary)" },
+  Common: { bg: "transparent", border: "var(--border-strong)", text: "var(--text-secondary)" },
+  Rare: { bg: "rgba(255, 77, 106, 0.1)", border: "rgba(255, 77, 106, 0.3)", text: "var(--red)" },
+  Epic: { bg: "rgba(139, 130, 184, 0.1)", border: "rgba(139, 130, 184, 0.3)", text: "var(--accent-purple)" },
+  Legendary: { bg: "rgba(255, 215, 0, 0.1)", border: "rgba(255, 215, 0, 0.3)", text: "var(--yellow)" },
 };
 
 export default function PowerShop() {
@@ -103,7 +103,8 @@ export default function PowerShop() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {items.map((item) => {
-              const rStyle = RARITY_STYLES[item.rarity] || RARITY_STYLES.Common;
+              const rarityNorm = item.rarity ? item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1).toLowerCase() : "Common";
+              const rStyle = RARITY_STYLES[rarityNorm] || RARITY_STYLES.Common;
               return (
                 <div key={item.id} className="card p-6 flex flex-col transition-all hover:-translate-y-1">
                   <div className="flex justify-between items-start mb-4">
